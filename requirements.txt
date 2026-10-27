@@ -1,0 +1,12 @@
+# Core Automation & Scraping
+playwright>=1.40.0
+requests>=2.31.0
+urllib3>=2.0.0
+certifi>=2024.0.0
+
+# Document Processing & PDF Rendering
+reportlab>=4.0.0
+pypdf>=4.0.0
+PyMuPDF>=1.23.0
+Pillow>=10.0.0
+pytesseract>=0.3.10

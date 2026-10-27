@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobAutomation Mission Control</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mission Control">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
+  <link rel="alternate icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+    /* Custom Scrollbar for light theme */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- TOP APP BAR -->
+  <header class="border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-40 px-4 py-3 shadow-xs">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Status Beacon -->
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/20 text-white">
+          <span class="text-xl">🚀</span>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-bold text-base tracking-tight text-slate-900">Mission Control</h1>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Autonomous
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">Amrit Kumar &bull; Full Stack AI &amp; Cloud Engine</p>
+        </div>
+      </div>
+
+      <!-- Live Wave & Quota HUD Pills -->
+      <div class="flex items-center flex-wrap gap-2 text-xs">
+        <div class="bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 flex items-center space-x-2 shadow-xs">
+          <span class="text-slate-500">🌊 Schedule:</span>
+          <span id="hudWaveText" class="font-semibold text-indigo-700">Loading Wave...</span>
+        </div>
+        <div class="bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 flex items-center space-x-2 shadow-xs">
+          <span class="text-slate-500">🎯 Daily Target:</span>
+          <span id="hudQuotaText" class="font-semibold text-emerald-700">-- / 567</span>
+          <div class="w-16 bg-slate-200 h-1.5 rounded-full overflow-hidden ml-1">
+            <div id="hudQuotaBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Global Actions -->
+      <div class="flex items-center space-x-2">
+        <button onclick="triggerQuickAction('wave')" id="btnWaveTrigger" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center space-x-1.5">
+          <span>⚡</span>
+          <span>Run Wave</span>
+        </button>
+        <button onclick="triggerQuickAction('refresh_all')" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium px-3 py-1.5 rounded-lg transition shadow-xs flex items-center space-x-1.5">
+          <span>🔄</span>
+          <span>Refresh All</span>
+        </button>
+        <button onclick="triggerQuickAction('inbound')" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium px-3 py-1.5 rounded-lg transition shadow-xs flex items-center space-x-1.5">
+          <span>📥</span>
+          <span>Inbound Sweep</span>
+        </button>
+        <button onclick="loadAllData(true)" title="Force Refresh Data" class="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition border border-slate-200 bg-white shadow-xs">
+          <svg id="refreshSpinner" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        </button>
+        <button onclick="shutdownServer()" title="Stop Dashboard Server & Free All Memory (0 MB RAM)" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition shadow-xs flex items-center space-x-1 ml-1">
+          <span>🛑</span>
+          <span>Stop Server</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- BACKGROUND ACTION RUNNER STATUS BANNER (shown when command executing) -->
+  <div id="actionRunningBanner" class="hidden bg-indigo-50 border-b border-indigo-200 px-4 py-2 text-xs text-indigo-700 font-medium">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <svg class="animate-spin h-3.5 w-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+        <span>Executing in background: <strong id="actionRunningText" class="text-indigo-900 font-semibold">...</strong></span>
+      </div>
+      <button onclick="switchTab('logsTab')" class="underline hover:text-indigo-900">View Output Terminal &rarr;</button>
+    </div>
+  </div>
+
+  <!-- URGENT ATTENTION ALERTS CONTAINER -->
+  <div id="urgentAlertsContainer" class="max-w-7xl mx-auto w-full px-4 pt-4"></div>
+
+  <!-- MAIN NAVIGATION TABS -->
+  <div class="border-b border-slate-200 bg-white/70 backdrop-blur px-4">
+    <div class="max-w-7xl mx-auto flex space-x-1 overflow-x-auto text-sm">
+      <button onclick="switchTab('overviewTab')" id="tabBtn-overviewTab" class="tab-btn px-4 py-3 font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center space-x-2 whitespace-nowrap">
+        <span>📊</span>
+        <span>Executive HUD</span>
+      </button>
+      <button onclick="switchTab('triageTab')" id="tabBtn-triageTab" class="tab-btn px-4 py-3 font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 whitespace-nowrap">
+        <span>📥</span>
+        <span>Action Triage &amp; Drafts</span>
+        <span id="tabBadgeDrafts" class="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">0</span>
+      </button>
+      <button onclick="switchTab('crmTab')" id="tabBtn-crmTab" class="tab-btn px-4 py-3 font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 whitespace-nowrap">
+        <span>🤝</span>
+        <span>Recruiter CRM</span>
+        <span id="tabBadgeCRM" class="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600 border border-slate-200 font-semibold">238</span>
+      </button>
+      <button onclick="switchTab('portalsTab')" id="tabBtn-portalsTab" class="tab-btn px-4 py-3 font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 whitespace-nowrap">
+        <span>🌐</span>
+        <span>12-Engine Portals</span>
+      </button>
+      <button onclick="switchTab('debuggerTab')" id="tabBtn-debuggerTab" class="tab-btn px-4 py-3 font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 whitespace-nowrap">
+        <span>📸</span>
+        <span>Bot Debugger</span>
+        <span id="tabBadgeScreenshots" class="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-amber-50 text-amber-700 border border-amber-200 font-semibold">0</span>
+      </button>
+      <button onclick="switchTab('logsTab')" id="tabBtn-logsTab" class="tab-btn px-4 py-3 font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 whitespace-nowrap">
+        <span>📜</span>
+        <span>Live Telemetry</span>
+      </button>
+      <button onclick="switchTab('qaTab')" id="tabBtn-qaTab" class="tab-btn px-4 py-3 font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 whitespace-nowrap">
+        <span>🧠</span>
+        <span>QA Memory &amp; Review</span>
+        <span id="tabBadgeQA" class="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN TAB CONTENT CONTAINER -->
+  <main class="max-w-7xl mx-auto w-full px-4 py-6 flex-1">
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: EXECUTIVE HUD & OVERVIEW -->
+    <!-- ===================================================================== -->
+    <div id="overviewTab" class="tab-content space-y-6">
+      
+      <!-- Top Metric Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Quota Progress -->
+        <div class="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs hover:shadow transition">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-semibold mb-2">
+            <span>Daily Quota (Wave Paced)</span>
+            <span class="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200" id="cardQuotaPct">0%</span>
+          </div>
+          <div class="text-2xl font-bold text-slate-900 tracking-tight" id="cardQuotaMain">0 / 567</div>
+          <p class="text-xs text-slate-500 mt-1" id="cardQuotaRemaining">554 actions left today</p>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-3 border border-slate-200/50">
+            <div id="cardQuotaBar" class="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Recruiter Engagement -->
+        <div class="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs hover:shadow transition">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-semibold mb-2">
+            <span>Recruiter CRM Pipeline</span>
+            <span class="text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200" id="cardActiveEngagements">38 Active</span>
+          </div>
+          <div class="text-2xl font-bold text-slate-900 tracking-tight" id="cardTotalContacts">238 Leads</div>
+          <p class="text-xs text-slate-500 mt-1" id="cardRepliesCalls">24 Replied &bull; 1 Call Request</p>
+          <div class="flex items-center space-x-1.5 mt-3 text-xs">
+            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium">200 Sent</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">24 Replied</span>
+            <span class="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">1 Call</span>
+          </div>
+        </div>
+
+        <!-- Pending Tasks -->
+        <div class="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs hover:shadow transition">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-semibold mb-2">
+            <span>Action Items &amp; Tasks</span>
+            <span class="text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200" id="cardHighPriorityTasks">38 Urgent</span>
+          </div>
+          <div class="text-2xl font-bold text-slate-900 tracking-tight" id="cardPendingTasks">43 Pending</div>
+          <p class="text-xs text-slate-500 mt-1" id="cardTasksBreakdown">1 Call &bull; 14 Links &bull; 28 Reviews</p>
+          <div class="mt-3">
+            <button onclick="switchTab('triageTab')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">Triage items now &rarr;</button>
+          </div>
+        </div>
+
+        <!-- Inbound Reply Drafts -->
+        <div class="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs hover:shadow transition">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-semibold mb-2">
+            <span>Inbound Email Drafts</span>
+            <span class="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Needs Review</span>
+          </div>
+          <div class="text-2xl font-bold text-slate-900 tracking-tight" id="cardPendingDrafts">42 Ready</div>
+          <p class="text-xs text-slate-500 mt-1">AI-generated contextual responses</p>
+          <div class="mt-3 flex items-center space-x-2">
+            <button onclick="switchTab('triageTab')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg text-slate-700 border border-slate-200 font-medium transition">Review &amp; Send</button>
+            <button onclick="batchApproveCTCReplies()" class="text-xs text-emerald-700 hover:text-emerald-800 font-semibold">Quick CTC Batch</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Command Center & System Health Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Quick Launcher Grid -->
+        <div class="lg:col-span-2 bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
+              <span>⚡</span>
+              <span>Autonomous Action Launchpad</span>
+            </h2>
+            <span class="text-xs text-slate-400">Triggers safe background execution</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            
+            <button onclick="triggerQuickAction('wave')" class="p-3 bg-slate-50 hover:bg-indigo-50/60 border border-slate-200 hover:border-indigo-200 rounded-xl text-left transition group shadow-2xs">
+              <div class="text-lg mb-1 group-hover:scale-110 transition-transform">🌊</div>
+              <div class="font-semibold text-xs text-slate-900">Run Application Wave</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Executes scheduled quota slice across all 10 portals</div>
+            </button>
+
+            <button onclick="triggerQuickAction('refresh_all')" class="p-3 bg-slate-50 hover:bg-indigo-50/60 border border-slate-200 hover:border-indigo-200 rounded-xl text-left transition group shadow-2xs">
+              <div class="text-lg mb-1 group-hover:scale-110 transition-transform">🔄</div>
+              <div class="font-semibold text-xs text-slate-900">Refresh All Profiles</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Boosts search ranking on Naukri, Instahyre, Foundit</div>
+            </button>
+
+            <button onclick="triggerQuickAction('inbound')" class="p-3 bg-slate-50 hover:bg-indigo-50/60 border border-slate-200 hover:border-indigo-200 rounded-xl text-left transition group shadow-2xs">
+              <div class="text-lg mb-1 group-hover:scale-110 transition-transform">📥</div>
+              <div class="font-semibold text-xs text-slate-900">Inbound Harvester Sweep</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Scans Gmail IMAP, extracts links, drafts responses</div>
+            </button>
+
+            <button onclick="triggerQuickAction('dropzone')" class="p-3 bg-slate-50 hover:bg-indigo-50/60 border border-slate-200 hover:border-indigo-200 rounded-xl text-left transition group shadow-2xs">
+              <div class="text-lg mb-1 group-hover:scale-110 transition-transform">📂</div>
+              <div class="font-semibold text-xs text-slate-900">Process Dropzone</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Hydrates cloud files, OCR screenshots, sends emails</div>
+            </button>
+
+            <button onclick="triggerQuickAction('resume_editor')" class="p-3 bg-slate-50 hover:bg-indigo-50/60 border border-slate-200 hover:border-indigo-200 rounded-xl text-left transition group shadow-2xs">
+              <div class="text-lg mb-1 group-hover:scale-110 transition-transform">📄</div>
+              <div class="font-semibold text-xs text-slate-900">Launch Resume Editor</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Opens 1-Page ATS compiler and preview tool</div>
+            </button>
+
+            <button onclick="triggerQuickAction('optimize')" class="p-3 bg-slate-50 hover:bg-indigo-50/60 border border-slate-200 hover:border-indigo-200 rounded-xl text-left transition group shadow-2xs">
+              <div class="text-lg mb-1 group-hover:scale-110 transition-transform">🧠</div>
+              <div class="font-semibold text-xs text-slate-900">Self-Learning Optimizer</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Thompson sampling MAB &amp; query mutations</div>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- System Telemetry & Daemons -->
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-4">
+          <h2 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
+            <span>🛡️</span>
+            <span>Background Daemons &amp; Health</span>
+          </h2>
+
+          <div class="space-y-3 text-xs">
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+              <div>
+                <div class="font-semibold text-slate-800">5-Wave Daily Automation</div>
+                <div class="text-[11px] text-slate-500 font-mono">com.amrit.jobautomation.daily</div>
+              </div>
+              <span id="badgeDaemonDaily" class="px-2 py-0.5 rounded text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">Active</span>
+            </div>
+
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+              <div>
+                <div class="font-semibold text-slate-800">Dropzone Watcher (5 Min)</div>
+                <div class="text-[11px] text-slate-500 font-mono">com.amrit.jobautomation</div>
+              </div>
+              <span id="badgeDaemonDropzone" class="px-2 py-0.5 rounded text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">Active</span>
+            </div>
+
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+              <div>
+                <div class="font-semibold text-slate-800">Telegram 24/7 Command Bot</div>
+                <div class="text-[11px] text-slate-500 font-mono">com.amrit.jobautomation.bot</div>
+              </div>
+              <span id="badgeDaemonBot" class="px-2 py-0.5 rounded text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">Active</span>
+            </div>
+
+            <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-lg text-[11px] text-indigo-800">
+              💡 <strong>Wave Schedule:</strong> 09:30 AM &bull; 11:30 AM &bull; 01:30 PM &bull; 03:30 PM &bull; 05:30 PM IST.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Recent Tasks Strip -->
+      <div class="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
+            <span>📋</span>
+            <span>Immediate Candidate Action Items</span>
+          </h2>
+          <button onclick="switchTab('triageTab')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">View all 43 items &rarr;</button>
+        </div>
+
+        <div id="overviewTasksList" class="space-y-2">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: TRIAGE CENTER & EMAIL DRAFT APPROVER -->
+    <!-- ===================================================================== -->
+    <div id="triageTab" class="tab-content hidden space-y-6">
+      
+      <!-- Top Triage Controls -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+        <div class="flex items-center space-x-3">
+          <h2 class="font-bold text-slate-900 text-base">Inbound Recruiter Draft Reviewer</h2>
+          <span id="draftCountBadge" class="px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">42 Pending Drafts</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="batchApproveCTCReplies()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center space-x-1.5">
+            <span>⚡</span>
+            <span>Batch Approve Standard CTC &amp; Notice Replies</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Split Screen Draft Reviewer -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[580px]">
+        
+        <!-- Left Pane: Drafts List -->
+        <div class="lg:col-span-5 bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden max-h-[650px] shadow-xs">
+          <div class="p-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-700">Pending Recruiter Responses</span>
+            <input type="text" id="draftSearchInput" oninput="filterDraftsList()" placeholder="Filter by company or recruiter..." class="bg-white border border-slate-200 rounded-lg text-xs px-2.5 py-1 text-slate-800 focus:outline-none focus:border-indigo-500 w-48 shadow-2xs">
+          </div>
+          <div id="draftsListContainer" class="divide-y divide-slate-100 overflow-y-auto flex-1">
+            <!-- Dynamic Draft Items -->
+          </div>
+        </div>
+
+        <!-- Right Pane: Active Draft Detail & Editor -->
+        <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-5 flex flex-col justify-between shadow-xs">
+          
+          <div id="draftDetailEmptyState" class="my-auto text-center py-12 text-slate-400">
+            <div class="text-4xl mb-2">✉️</div>
+            <p class="text-sm font-medium">Select a recruiter reply draft from the list to review, edit, or approve.</p>
+          </div>
+
+          <div id="draftDetailPane" class="hidden space-y-4">
+            
+            <!-- Recruiter Meta Header -->
+            <div class="border-b border-slate-200 pb-3 flex items-start justify-between">
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span id="draftDetailCompany" class="font-bold text-slate-900 text-base">Company Name</span>
+                  <span id="draftDetailIntentBadge" class="text-[10px] px-2 py-0.5 rounded font-mono uppercase bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">INTENT</span>
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5 flex items-center space-x-2">
+                  <span>To: <strong id="draftDetailRecruiter" class="text-slate-800">recruiter@company.com</strong></span>
+                  <span>&bull;</span>
+                  <span id="draftDetailRole">Role Title</span>
+                </div>
+              </div>
+              <span id="draftDetailId" class="text-xs font-mono text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-200">DRAFT-ID</span>
+            </div>
+
+            <!-- Subject Line -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Subject Line</label>
+              <input type="text" id="draftEditSubject" class="w-full bg-slate-50 border border-slate-200 rounded-lg text-xs px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-500 shadow-2xs">
+            </div>
+
+            <!-- Email Body Editor -->
+            <div class="flex-1">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">AI Generated Reply Content (Context-Aware)</label>
+              <textarea id="draftEditBody" rows="12" class="w-full bg-slate-50 border border-slate-200 rounded-lg text-xs p-3 text-slate-800 font-mono leading-relaxed focus:bg-white focus:outline-none focus:border-indigo-500 shadow-2xs"></textarea>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between pt-3 border-t border-slate-200">
+              <div class="flex items-center space-x-2">
+                <button onclick="dismissCurrentDraft()" class="text-xs text-slate-500 hover:text-rose-600 px-3 py-2 rounded transition font-medium">
+                  Reject &amp; Archive
+                </button>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button onclick="saveCurrentDraftEdits()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold px-4 py-2 rounded-lg transition shadow-xs">
+                  Save Changes
+                </button>
+                <button onclick="approveCurrentDraft()" id="btnApproveDraft" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-xs flex items-center space-x-1.5">
+                  <span>🚀</span>
+                  <span>Approve &amp; Send via Gmail SMTP</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Candidate Task Ledger Section -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
+              <span>📋</span>
+              <span>Candidate Action Items &amp; Recruiter Follow-ups</span>
+            </h2>
+            <p class="text-xs text-slate-500">Captured obligations from recruiter emails, external links, and interview invites</p>
+          </div>
+
+          <div class="flex items-center space-x-1.5 text-xs">
+            <button onclick="filterTasks('ALL')" class="task-filter-btn px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-semibold shadow-xs" data-filter="ALL">All (43)</button>
+            <button onclick="filterTasks('HIGH')" class="task-filter-btn px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium" data-filter="HIGH">Urgent (38)</button>
+            <button onclick="filterTasks('SCHEDULE_CALL')" class="task-filter-btn px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium" data-filter="SCHEDULE_CALL">Calls (1)</button>
+            <button onclick="filterTasks('APPLY_LINK_MANUAL')" class="task-filter-btn px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium" data-filter="APPLY_LINK_MANUAL">Links (14)</button>
+          </div>
+        </div>
+
+        <div id="tasksTableContainer" class="overflow-x-auto">
+          <!-- Dynamic Tasks List -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: RECRUITER RELATIONSHIP CRM KANBAN -->
+    <!-- ===================================================================== -->
+    <div id="crmTab" class="tab-content hidden space-y-4">
+      
+      <!-- CRM Header Controls -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+        <div>
+          <h2 class="font-bold text-slate-900 text-base">Recruiter Relationship CRM Pipeline</h2>
+          <p class="text-xs text-slate-500">Tracking 238 recruiter threads across communication stages</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <input type="text" id="crmSearchInput" oninput="renderCrmKanban()" placeholder="Search by company, recruiter, or role..." class="bg-slate-50 border border-slate-200 rounded-lg text-xs px-3 py-1.5 text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-500 w-64 shadow-2xs">
+        </div>
+      </div>
+
+      <!-- Kanban Columns Container -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
+        
+        <!-- Column 1: Outreach Sent -->
+        <div class="bg-slate-100/70 border border-slate-200/90 rounded-xl p-3 flex flex-col h-[650px] shadow-xs">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200 mb-3">
+            <span class="text-xs font-semibold text-slate-700 flex items-center space-x-1.5">
+              <span>📤</span>
+              <span>Outreach Sent</span>
+            </span>
+            <span id="crmColCountSent" class="text-xs px-2 py-0.5 rounded-full bg-white text-slate-600 font-mono border border-slate-200 shadow-2xs">0</span>
+          </div>
+          <div id="crmColSent" class="space-y-2 overflow-y-auto flex-1 pr-1"></div>
+        </div>
+
+        <!-- Column 2: Replied -->
+        <div class="bg-slate-100/70 border border-slate-200/90 rounded-xl p-3 flex flex-col h-[650px] shadow-xs">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200 mb-3">
+            <span class="text-xs font-semibold text-emerald-800 flex items-center space-x-1.5">
+              <span>💬</span>
+              <span>Replied</span>
+            </span>
+            <span id="crmColCountReplied" class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono shadow-2xs">0</span>
+          </div>
+          <div id="crmColReplied" class="space-y-2 overflow-y-auto flex-1 pr-1"></div>
+        </div>
+
+        <!-- Column 3: Link Received -->
+        <div class="bg-slate-100/70 border border-slate-200/90 rounded-xl p-3 flex flex-col h-[650px] shadow-xs">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200 mb-3">
+            <span class="text-xs font-semibold text-indigo-800 flex items-center space-x-1.5">
+              <span>🔗</span>
+              <span>Link Received</span>
+            </span>
+            <span id="crmColCountLink" class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono shadow-2xs">0</span>
+          </div>
+          <div id="crmColLink" class="space-y-2 overflow-y-auto flex-1 pr-1"></div>
+        </div>
+
+        <!-- Column 4: Screening Requested -->
+        <div class="bg-slate-100/70 border border-slate-200/90 rounded-xl p-3 flex flex-col h-[650px] shadow-xs">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200 mb-3">
+            <span class="text-xs font-semibold text-amber-800 flex items-center space-x-1.5">
+              <span>📞</span>
+              <span>Screening Requested</span>
+            </span>
+            <span id="crmColCountScreening" class="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-mono shadow-2xs">0</span>
+          </div>
+          <div id="crmColScreening" class="space-y-2 overflow-y-auto flex-1 pr-1"></div>
+        </div>
+
+        <!-- Column 5: Interview / Offer -->
+        <div class="bg-slate-100/70 border border-slate-200/90 rounded-xl p-3 flex flex-col h-[650px] shadow-xs">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200 mb-3">
+            <span class="text-xs font-semibold text-purple-800 flex items-center space-x-1.5">
+              <span>🏆</span>
+              <span>Interview / Offer</span>
+            </span>
+            <span id="crmColCountOffer" class="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200 font-mono shadow-2xs">0</span>
+          </div>
+          <div id="crmColOffer" class="space-y-2 overflow-y-auto flex-1 pr-1"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 4: 12-ENGINE PORTAL MATRIX -->
+    <!-- ===================================================================== -->
+    <div id="portalsTab" class="tab-content hidden space-y-6">
+      
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+        <div>
+          <h2 class="font-bold text-slate-900 text-base">Autonomous Application Portals &amp; ATS Matrix</h2>
+          <p class="text-xs text-slate-500">12 dedicated automation engines managing search, profile freshness, and multi-step applications</p>
+        </div>
+        <button onclick="triggerQuickAction('refresh_all')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs">
+          Refresh All Supported Portals
+        </button>
+      </div>
+
+      <!-- Portal Grid -->
+      <div id="portalsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dynamically Populated Cards -->
+      </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 5: VISUAL BOT DEBUGGER & SCREENSHOTS -->
+    <!-- ===================================================================== -->
+    <div id="debuggerTab" class="tab-content hidden space-y-6">
+      
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+        <div>
+          <h2 class="font-bold text-slate-900 text-base">Bot Visual Telemetry &amp; Stuck Resolvers</h2>
+          <p class="text-xs text-slate-500">Inspect screenshots captured during auto-apply execution obstacles</p>
+        </div>
+        <span id="debuggerCountBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-semibold">0 captures</span>
+      </div>
+
+      <div id="screenshotsGridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dynamically Populated Screenshots -->
+      </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 6: LIVE LOGS & TELEMETRY -->
+    <!-- ===================================================================== -->
+    <div id="logsTab" class="tab-content hidden space-y-4">
+      
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+        <div class="flex items-center space-x-3">
+          <h2 class="font-bold text-slate-900 text-base">System Telemetry &amp; Event Stream</h2>
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200 font-mono">automation.log</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="fetchLiveLogs()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs">
+            Refresh Log
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-300 rounded-xl p-4 font-mono text-xs overflow-x-auto h-[600px] flex flex-col justify-end shadow-inner">
+        <div id="terminalLogOutput" class="space-y-1 text-slate-200 overflow-y-auto">
+          Loading system logs...
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 7: QA MEMORY & QUESTIONS REVIEW -->
+    <!-- ===================================================================== -->
+    <div id="qaTab" class="tab-content hidden space-y-6">
+      
+      <!-- PENDING QUESTIONS REVIEW CARD -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h2 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+              <span>⏳</span>
+              <span>Pending Screening Questions Review</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Questions that were default-answered while you were away. Set your preferred answer below to permanently teach the system for all future applications.</p>
+          </div>
+          <span id="qaPendingBadgeHeader" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">0 Pending Review</span>
+        </div>
+
+        <div id="qaPendingList" class="space-y-3">
+          <div class="text-center py-6 text-slate-400 text-xs">Loading pending questions...</div>
+        </div>
+      </div>
+
+      <!-- LEARNED QA MEMORY BANK TABLE & SEARCH -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h2 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+              <span>🧠</span>
+              <span>Learned QA Memory Bank</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">All persistent answers and rules remembered across Greenhouse, Workday, Forms, and Naukri.</p>
+          </div>
+          <button onclick="promptAddCustomQA()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
+            <span>+</span>
+            <span>Add Custom Rule</span>
+          </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="flex items-center space-x-3">
+          <input type="text" id="qaSearchInput" oninput="filterQABankTable()" placeholder="Search learned questions or keywords (e.g. sponsorship, notice, ctc)..." class="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-indigo-500">
+        </div>
+
+        <div class="overflow-x-auto border border-slate-100 rounded-lg max-h-[500px]">
+          <table class="w-full text-left text-xs text-slate-700">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 sticky top-0">
+              <tr>
+                <th class="py-2.5 px-3">Question / Normalized Pattern</th>
+                <th class="py-2.5 px-3">Saved Preferred Answer</th>
+                <th class="py-2.5 px-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="qaBankTableBody" class="divide-y divide-slate-100">
+              <tr><td colspan="3" class="text-center py-6 text-slate-400">Loading memory bank...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- LIGHTBOX IMAGE MODAL -->
+  <div id="imageLightboxModal" class="fixed inset-0 z-50 bg-black/60 hidden backdrop-blur-sm flex items-center justify-center p-4" onclick="closeLightbox()">
+    <div class="relative max-w-5xl max-h-[90vh] bg-white border border-slate-200 rounded-xl overflow-hidden p-3 shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between p-2 border-b border-slate-200 text-xs text-slate-700">
+        <span id="lightboxTitle" class="font-semibold text-slate-900">Screenshot Preview</span>
+        <button onclick="closeLightbox()" class="text-slate-400 hover:text-slate-800 text-lg px-2 font-bold">&times;</button>
+      </div>
+      <div class="overflow-auto max-h-[80vh] flex items-center justify-center p-2 bg-slate-50 rounded-lg mt-2">
+        <img id="lightboxImg" src="" alt="Screenshot Preview" class="rounded max-h-full max-w-full object-contain shadow-xs">
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- CLIENT-SIDE SCRIPT -->
+  <script>
+    let globalState = null;
+    let globalDrafts = [];
+    let globalTasks = [];
+    let globalCrm = [];
+    let activeDraftId = null;
+    let currentTaskFilter = 'ALL';
+
+    async function shutdownServer() {
+      if (!confirm("Stop the Mission Control Dashboard server now?\n\nThis will cleanly terminate the background process and release all memory (0 MB RAM). You can reopen it anytime by double-clicking 'Job Automation Dashboard.app'.")) {
+        return;
+      }
+      try {
+        await fetch('/api/server/shutdown', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      } catch (err) {}
+
+      document.body.innerHTML = `
+        <div class="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-white font-sans">
+          <div class="max-w-md w-full bg-slate-800 border border-slate-700 rounded-2xl p-8 text-center shadow-2xl">
+            <div class="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">✓</div>
+            <h2 class="text-xl font-bold text-white mb-2">Dashboard Server Stopped</h2>
+            <p class="text-slate-400 text-sm mb-6">Process terminated cleanly. All memory has been freed (0 MB RAM occupied).</p>
+            <div class="bg-slate-900/70 rounded-xl p-4 text-xs text-slate-300 text-left border border-slate-700/60 mb-6 space-y-2.5">
+              <div class="flex items-center space-x-2 text-emerald-400 font-semibold">
+                <span>●</span><span>System RAM Usage: 0 MB</span>
+              </div>
+              <div class="flex items-center space-x-2 text-slate-300">
+                <span>●</span><span>To reopen anytime: Double-click <b>Job Automation Dashboard.app</b></span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-500">You can safely close this browser tab.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    // TAB SWITCHING
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-indigo-600', 'text-indigo-600', 'font-semibold');
+        btn.classList.add('border-transparent', 'text-slate-500');
+      });
+
+      const target = document.getElementById(tabId);
+      const btn = document.getElementById('tabBtn-' + tabId);
+      if (target) target.classList.remove('hidden');
+      if (btn) {
+        btn.classList.remove('border-transparent', 'text-slate-500');
+        btn.classList.add('border-indigo-600', 'text-indigo-600', 'font-semibold');
+      }
+
+      if (tabId === 'logsTab') fetchLiveLogs();
+      if (tabId === 'debuggerTab') fetchScreenshots();
+      if (tabId === 'qaTab') { fetchQAPending(); fetchQABank(); }
+    }
+
+    // TOAST MESSAGES
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const bg = type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' :
+                 type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-900' :
+                 'bg-white border-slate-200 text-slate-800';
+      toast.className = `${bg} border px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0 flex items-center space-x-2`;
+      toast.innerHTML = `<span>${type === 'success' ? '✓' : type === 'error' ? '⚠️' : 'ℹ️'}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // LOAD ALL DATA
+    async function loadAllData(showSuccessToast = false) {
+      const spinner = document.getElementById('refreshSpinner');
+      if (spinner) spinner.classList.add('animate-spin');
+
+      try {
+        const ts = Date.now();
+        const [stateRes, draftsRes, tasksRes, crmRes] = await Promise.all([
+          fetch(`/api/state?_t=${ts}`, { cache: 'no-store' }).then(r => r.json()),
+          fetch(`/api/drafts?_t=${ts}`, { cache: 'no-store' }).then(r => r.json()),
+          fetch(`/api/tasks?_t=${ts}`, { cache: 'no-store' }).then(r => r.json()),
+          fetch(`/api/crm?_t=${ts}`, { cache: 'no-store' }).then(r => r.json())
+        ]);
+
+        globalState = stateRes;
+        globalDrafts = draftsRes.drafts || [];
+        globalTasks = tasksRes.tasks || [];
+        globalCrm = crmRes.threads || [];
+
+        renderHUD();
+        renderUrgentAlerts();
+        renderOverviewTasks();
+        renderDraftsList();
+        renderTasksList();
+        renderCrmKanban();
+        renderPortalsGrid();
+
+        const pendingQA = (stateRes.qa_summary && stateRes.qa_summary.pending_count) || 0;
+        const tabBadgeQA = document.getElementById('tabBadgeQA');
+        if (tabBadgeQA) tabBadgeQA.innerText = pendingQA;
+
+        const activeTab = document.querySelector('.tab-content:not(.hidden)');
+        if (activeTab && activeTab.id === 'qaTab') {
+          fetchQAPending();
+        }
+
+        if (showSuccessToast) showToast('System state synchronized', 'success');
+      } catch (err) {
+        console.error('Failed to load data:', err);
+        showToast('Error syncing system state', 'error');
+      } finally {
+        if (spinner) spinner.classList.remove('animate-spin');
+      }
+    }
+
+    // RENDER TOP HUD
+    function renderHUD() {
+      if (!globalState) return;
+
+      const q = globalState.quotas || {};
+      const w = globalState.wave_info || {};
+      const pct = q.overall_percent || 0;
+
+      // HUD Top Bar
+      const hudWaveText = document.getElementById('hudWaveText');
+      if (hudWaveText) {
+        hudWaveText.innerText = w.current_wave_num > 0 ?
+          `Wave ${w.current_wave_num} of ${w.total_waves} (Next: ${w.next_wave_str})` : 'Pre-Wave 1';
+      }
+
+      const hudQuotaText = document.getElementById('hudQuotaText');
+      const hudQuotaBar = document.getElementById('hudQuotaBar');
+      if (hudQuotaText) hudQuotaText.innerText = `${q.total_applied || 0} / ${q.total_limit || 567} (${pct}%)`;
+      if (hudQuotaBar) hudQuotaBar.style.width = `${pct}%`;
+
+      // Card Metrics
+      const cardQuotaMain = document.getElementById('cardQuotaMain');
+      const cardQuotaPct = document.getElementById('cardQuotaPct');
+      const cardQuotaRemaining = document.getElementById('cardQuotaRemaining');
+      const cardQuotaBar = document.getElementById('cardQuotaBar');
+
+      if (cardQuotaMain) cardQuotaMain.innerText = `${q.total_applied || 0} / ${q.total_limit || 567}`;
+      if (cardQuotaPct) cardQuotaPct.innerText = `${pct}%`;
+      if (cardQuotaRemaining) cardQuotaRemaining.innerText = `${q.total_remaining || 0} applications left today`;
+      if (cardQuotaBar) cardQuotaBar.style.width = `${pct}%`;
+
+      // CRM Card
+      const crm = globalState.crm_summary || {};
+      const cardTotalContacts = document.getElementById('cardTotalContacts');
+      const cardActiveEngagements = document.getElementById('cardActiveEngagements');
+      const cardRepliesCalls = document.getElementById('cardRepliesCalls');
+      if (cardTotalContacts) cardTotalContacts.innerText = `${crm.total_contacts || 238} Leads`;
+      if (cardActiveEngagements) cardActiveEngagements.innerText = `${crm.active_engagements || 38} Active`;
+      if (cardRepliesCalls) {
+        const sc = crm.stage_counts || {};
+        cardRepliesCalls.innerText = `${sc.REPLIED || 24} Replied &bull; ${sc.SCREENING_REQUESTED || 1} Call Request`;
+      }
+
+      // Tasks Card
+      const ts = globalState.tasks_summary || {};
+      const cardPendingTasks = document.getElementById('cardPendingTasks');
+      const cardHighPriorityTasks = document.getElementById('cardHighPriorityTasks');
+      const cardTasksBreakdown = document.getElementById('cardTasksBreakdown');
+      if (cardPendingTasks) cardPendingTasks.innerText = `${ts.total_pending || 0} Pending`;
+      if (cardHighPriorityTasks) cardHighPriorityTasks.innerText = `${ts.high_priority || 0} Urgent`;
+      if (cardTasksBreakdown) cardTasksBreakdown.innerHTML = `${ts.calls || 0} Call &bull; ${ts.links || 0} Links &bull; ${ts.reviews || 0} Reviews`;
+
+      // Drafts Card
+      const ds = globalState.drafts_summary || {};
+      const cardPendingDrafts = document.getElementById('cardPendingDrafts');
+      if (cardPendingDrafts) cardPendingDrafts.innerText = `${ds.total_pending || 0} Ready`;
+
+      // Badges
+      const tabBadgeDrafts = document.getElementById('tabBadgeDrafts');
+      const tabBadgeCRM = document.getElementById('tabBadgeCRM');
+      const draftCountBadge = document.getElementById('draftCountBadge');
+      if (tabBadgeDrafts) tabBadgeDrafts.innerText = ds.total_pending || 0;
+      if (draftCountBadge) draftCountBadge.innerText = `${ds.total_pending || 0} Pending Drafts`;
+      if (tabBadgeCRM) tabBadgeCRM.innerText = crm.total_contacts || 238;
+
+      // Action Runner Banner
+      const action = globalState.action_status || {};
+      const actionBanner = document.getElementById('actionRunningBanner');
+      const actionText = document.getElementById('actionRunningText');
+      if (action.is_running) {
+        actionBanner.classList.remove('hidden');
+        actionText.innerText = action.current_action || 'Automated Task';
+      } else {
+        actionBanner.classList.add('hidden');
+      }
+
+      // Daemons
+      const d = globalState.daemons || {};
+      const bDaily = document.getElementById('badgeDaemonDaily');
+      const bDrop = document.getElementById('badgeDaemonDropzone');
+      const bBot = document.getElementById('badgeDaemonBot');
+      if (bDaily) bDaily.className = d.daily_scheduler ? 'px-2 py-0.5 rounded text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium' : 'px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-500 border border-slate-200 font-medium';
+      if (bDrop) bDrop.className = d.dropzone_watcher ? 'px-2 py-0.5 rounded text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium' : 'px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-500 border border-slate-200 font-medium';
+      if (bBot) bBot.className = d.telegram_bot ? 'px-2 py-0.5 rounded text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium' : 'px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-500 border border-slate-200 font-medium';
+    }
+
+    // RENDER URGENT ALERTS
+    function renderUrgentAlerts() {
+      const container = document.getElementById('urgentAlertsContainer');
+      if (!container || !globalState) return;
+
+      const alerts = globalState.urgent_alerts || [];
+      if (alerts.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let html = '<div class="space-y-2">';
+      alerts.forEach(a => {
+        const isCrit = a.level === 'CRITICAL';
+        const bg = isCrit ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-amber-50 border-amber-200 text-amber-900';
+        const icon = isCrit ? '🚨' : '⚠️';
+        
+        let actionBtn = '';
+        if (a.type === 'CALL_SCHEDULE') {
+          actionBtn = `<button onclick="switchTab('triageTab')" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-semibold px-3 py-1 rounded-lg transition shadow-xs">Respond to Call &rarr;</button>`;
+        } else if (a.type === 'SESSION_EXPIRED') {
+          actionBtn = `<button onclick="triggerQuickAction('login_${a.portal_key}')" class="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1 rounded-lg transition shadow-xs">Re-Login Now &rarr;</button>`;
+        } else if (a.type === 'BOT_STUCK') {
+          actionBtn = `<button onclick="switchTab('debuggerTab')" class="text-xs bg-white hover:bg-slate-50 text-slate-800 font-semibold px-3 py-1 rounded-lg border border-slate-200 shadow-xs transition">Inspect Screenshots &rarr;</button>`;
+        }
+
+        html += `
+          <div class="p-3.5 rounded-xl border ${bg} flex flex-wrap items-center justify-between gap-3 shadow-xs">
+            <div class="flex items-center space-x-3">
+              <span class="text-xl">${icon}</span>
+              <div>
+                <strong class="text-slate-900 text-xs font-bold block">${a.title}</strong>
+                <span class="text-xs opacity-90">${a.description}</span>
+              </div>
+            </div>
+            ${actionBtn}
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // RENDER OVERVIEW TASKS
+    function renderOverviewTasks() {
+      const container = document.getElementById('overviewTasksList');
+      if (!container) return;
+
+      const topTasks = globalTasks.filter(t => t.status === 'PENDING').slice(0, 5);
+      if (topTasks.length === 0) {
+        container.innerHTML = '<div class="text-xs text-slate-400 py-3">No pending candidate tasks! All caught up.</div>';
+        return;
+      }
+
+      let html = '';
+      topTasks.forEach(t => {
+        const isCall = t.type === 'SCHEDULE_CALL';
+        const isHigh = t.priority === 'HIGH';
+        const pBadge = isCall ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                       isHigh ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-600 border-slate-200';
+
+        html += `
+          <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200 hover:border-slate-300 transition shadow-2xs">
+            <div class="flex items-center space-x-3 min-w-0">
+              <span class="text-sm">${isCall ? '📞' : '📋'}</span>
+              <div class="min-w-0">
+                <div class="flex items-center space-x-2">
+                  <span class="text-xs font-semibold text-slate-900 truncate">${t.title}</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded font-mono uppercase border ${pBadge} font-medium">${t.priority}</span>
+                </div>
+                <div class="text-[11px] text-slate-500 mt-0.5 truncate">${t.company} &bull; ${t.recruiter_email || 'No email'}</div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+              ${t.action_url ? `<a href="${t.action_url}" target="_blank" class="text-xs text-indigo-700 hover:text-indigo-900 font-semibold px-2 py-1 bg-white border border-slate-200 rounded-lg shadow-xs">Open Link ↗</a>` : ''}
+              <button onclick="completeTask('${t.id}')" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold px-2.5 py-1 rounded-lg transition shadow-2xs">Mark Done</button>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    // RENDER DRAFTS LIST
+    function renderDraftsList() {
+      const container = document.getElementById('draftsListContainer');
+      if (!container) return;
+
+      const q = (document.getElementById('draftSearchInput')?.value || '').toLowerCase();
+      const filtered = globalDrafts.filter(d => {
+        if (!q) return true;
+        return (d.company || '').toLowerCase().includes(q) ||
+               (d.recruiter_email || '').toLowerCase().includes(q) ||
+               (d.subject || '').toLowerCase().includes(q);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="p-8 text-center text-xs text-slate-400 font-medium">No matching drafts found.</div>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(d => {
+        const isCurrent = d.draft_id === activeDraftId;
+        const activeClass = isCurrent ? 'bg-indigo-50/90 border-l-4 border-indigo-600' : 'hover:bg-slate-50';
+
+        html += `
+          <div onclick="selectDraft('${d.draft_id}')" class="p-3.5 cursor-pointer transition ${activeClass}">
+            <div class="flex items-center justify-between mb-1">
+              <strong class="text-xs font-bold text-slate-900 truncate max-w-[180px]">${d.company || 'Direct Recruiter'}</strong>
+              <span class="text-[10px] px-1.5 py-0.2 rounded font-mono uppercase bg-slate-100 text-slate-700 border border-slate-200 font-medium">${d.intent || 'REPLY'}</span>
+            </div>
+            <div class="text-[11px] text-slate-600 truncate font-medium">${d.subject || 'Application Reply'}</div>
+            <div class="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+              <span class="truncate max-w-[160px]">${d.recruiter_email || ''}</span>
+              <span>${(d.created_at || '').substring(5, 16)}</span>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+
+      // Auto-select first draft if none selected
+      if (!activeDraftId && filtered.length > 0) {
+        selectDraft(filtered[0].draft_id);
+      }
+    }
+
+    function filterDraftsList() {
+      renderDraftsList();
+    }
+
+    function selectDraft(draftId) {
+      activeDraftId = draftId;
+      const draft = globalDrafts.find(d => d.draft_id === draftId);
+      if (!draft) return;
+
+      renderDraftsList();
+
+      document.getElementById('draftDetailEmptyState').classList.add('hidden');
+      document.getElementById('draftDetailPane').classList.remove('hidden');
+
+      document.getElementById('draftDetailCompany').innerText = draft.company || 'Recruiter Direct';
+      document.getElementById('draftDetailRecruiter').innerText = draft.recruiter_email || 'recruiter';
+      document.getElementById('draftDetailRole').innerText = draft.role || 'Software Engineer';
+      document.getElementById('draftDetailId').innerText = draft.draft_id;
+      document.getElementById('draftDetailIntentBadge').innerText = draft.intent || 'GENERAL_INQUIRY';
+      document.getElementById('draftEditSubject').value = draft.subject || '';
+      document.getElementById('draftEditBody').value = draft.body || '';
+    }
+
+    async function approveCurrentDraft() {
+      if (!activeDraftId) return;
+      const btn = document.getElementById('btnApproveDraft');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Sending via SMTP...</span>';
+
+      try {
+        const res = await fetch('/api/drafts/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ draft_id: activeDraftId })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast(`Reply sent successfully to recruiter!`, 'success');
+          globalDrafts = globalDrafts.filter(d => d.draft_id !== activeDraftId);
+          activeDraftId = null;
+          loadAllData();
+        } else {
+          showToast(`Failed to send: ${res.error || 'Check SMTP config'}`, 'error');
+        }
+      } catch (e) {
+        showToast('Error approving draft', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀</span><span>Approve &amp; Send via Gmail SMTP</span>';
+      }
+    }
+
+    async function saveCurrentDraftEdits() {
+      if (!activeDraftId) return;
+      const subject = document.getElementById('draftEditSubject').value;
+      const body = document.getElementById('draftEditBody').value;
+
+      try {
+        const res = await fetch('/api/drafts/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ draft_id: activeDraftId, subject, body })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast('Draft edits saved locally', 'success');
+          const d = globalDrafts.find(item => item.draft_id === activeDraftId);
+          if (d) { d.subject = subject; d.body = body; }
+        } else {
+          showToast('Failed to save draft', 'error');
+        }
+      } catch (e) {
+        showToast('Error saving draft', 'error');
+      }
+    }
+
+    async function dismissCurrentDraft() {
+      if (!activeDraftId || !confirm('Are you sure you want to dismiss this draft?')) return;
+      try {
+        const res = await fetch('/api/drafts/reject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ draft_id: activeDraftId })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast('Draft rejected and archived', 'info');
+          globalDrafts = globalDrafts.filter(d => d.draft_id !== activeDraftId);
+          activeDraftId = null;
+          loadAllData();
+        }
+      } catch (e) {
+        showToast('Error rejecting draft', 'error');
+      }
+    }
+
+    async function batchApproveCTCReplies() {
+      if (!confirm('Batch approve and send all standard CTC & 7-day notice period replies via SMTP?')) return;
+      showToast('Executing batch approval...', 'info');
+
+      try {
+        const res = await fetch('/api/drafts/batch_approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: 'ctc_notice' })
+        }).then(r => r.json());
+
+        showToast(`Batch approved & sent ${res.approved_count} emails!`, 'success');
+        loadAllData();
+      } catch (e) {
+        showToast('Error running batch approval', 'error');
+      }
+    }
+
+    // RENDER TASKS LIST
+    function renderTasksList() {
+      const container = document.getElementById('tasksTableContainer');
+      if (!container) return;
+
+      const filtered = globalTasks.filter(t => {
+        if (t.status !== 'PENDING') return false;
+        if (currentTaskFilter === 'HIGH') return t.priority === 'HIGH';
+        if (currentTaskFilter === 'SCHEDULE_CALL') return t.type === 'SCHEDULE_CALL';
+        if (currentTaskFilter === 'APPLY_LINK_MANUAL') return t.type === 'APPLY_LINK_MANUAL';
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="p-8 text-center text-xs text-slate-400 font-medium">No pending tasks matching this filter.</div>';
+        return;
+      }
+
+      let html = '<div class="divide-y divide-slate-100">';
+      filtered.forEach(t => {
+        const isCall = t.type === 'SCHEDULE_CALL';
+        const isHigh = t.priority === 'HIGH';
+        const pBadge = isCall ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                       isHigh ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-600 border-slate-200';
+
+        html += `
+          <div class="py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-start space-x-3 min-w-0">
+              <span class="text-base mt-0.5">${isCall ? '📞' : '📋'}</span>
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span class="text-xs font-bold text-slate-900">${t.title}</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded font-mono uppercase border ${pBadge} font-medium">${t.priority}</span>
+                  <span class="text-[10px] font-mono text-slate-400">${t.id}</span>
+                </div>
+                <div class="text-[11px] text-slate-500 mt-0.5">
+                  <strong class="text-slate-700">${t.company}</strong> &bull; ${t.recruiter_email || 'No email'} &bull; Due: ${t.due_date || 'ASAP'}
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              ${t.action_url ? `<a href="${t.action_url}" target="_blank" class="text-xs text-indigo-700 hover:text-indigo-900 font-semibold px-2.5 py-1 bg-white border border-slate-200 rounded-lg shadow-xs">Open Link ↗</a>` : ''}
+              <button onclick="completeTask('${t.id}')" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold px-3 py-1 rounded-lg transition shadow-2xs">Complete</button>
+              <button onclick="dismissTask('${t.id}')" class="text-xs text-slate-500 hover:text-rose-600 px-2 py-1 rounded font-medium">Dismiss</button>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function filterTasks(type) {
+      currentTaskFilter = type;
+      document.querySelectorAll('.task-filter-btn').forEach(b => {
+        if (b.dataset.filter === type) {
+          b.className = 'task-filter-btn px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-semibold shadow-xs';
+        } else {
+          b.className = 'task-filter-btn px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium';
+        }
+      });
+      renderTasksList();
+    }
+
+    async function completeTask(taskId) {
+      try {
+        const res = await fetch('/api/tasks/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task_id: taskId })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast(`Task ${taskId} marked as completed!`, 'success');
+          globalTasks = globalTasks.filter(t => t.id !== taskId);
+          loadAllData();
+        }
+      } catch (e) {
+        showToast('Error completing task', 'error');
+      }
+    }
+
+    async function dismissTask(taskId) {
+      try {
+        const res = await fetch('/api/tasks/dismiss', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task_id: taskId })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast(`Task ${taskId} dismissed`, 'info');
+          globalTasks = globalTasks.filter(t => t.id !== taskId);
+          loadAllData();
+        }
+      } catch (e) {
+        showToast('Error dismissing task', 'error');
+      }
+    }
+
+    // RENDER CRM KANBAN
+    function renderCrmKanban() {
+      const q = (document.getElementById('crmSearchInput')?.value || '').toLowerCase();
+      const filtered = globalCrm.filter(t => {
+        if (!q) return true;
+        return (t.company || '').toLowerCase().includes(q) ||
+               (t.contact_email || '').toLowerCase().includes(q) ||
+               (t.role || '').toLowerCase().includes(q);
+      });
+
+      const cols = {
+        'OUTREACH_SENT': document.getElementById('crmColSent'),
+        'REPLIED': document.getElementById('crmColReplied'),
+        'LINK_RECEIVED': document.getElementById('crmColLink'),
+        'SCREENING_REQUESTED': document.getElementById('crmColScreening'),
+        'OFFER': document.getElementById('crmColOffer')
+      };
+
+      const counts = { 'OUTREACH_SENT': 0, 'REPLIED': 0, 'LINK_RECEIVED': 0, 'SCREENING_REQUESTED': 0, 'OFFER': 0 };
+
+      Object.values(cols).forEach(c => { if (c) c.innerHTML = ''; });
+
+      filtered.forEach(t => {
+        let stage = t.stage || 'OUTREACH_SENT';
+        if (stage === 'INTERVIEW_SCHEDULED' || stage === 'TECH_ASSESSMENT') stage = 'OFFER';
+        if (!cols[stage]) stage = 'OUTREACH_SENT';
+
+        counts[stage] = (counts[stage] || 0) + 1;
+
+        const card = document.createElement('div');
+        card.className = 'p-3 rounded-lg bg-white border border-slate-200/90 hover:border-slate-300 transition cursor-pointer shadow-xs hover:shadow-sm';
+        card.onclick = () => alert(`Company: ${t.company}\nEmail: ${t.contact_email}\nRole: ${t.role}\nStage: ${t.stage}\nLast Interaction: ${t.last_interaction}`);
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <strong class="text-xs font-bold text-slate-900 truncate max-w-[140px]">${t.company || 'Direct'}</strong>
+            <span class="text-[9px] px-1.5 py-0.2 rounded font-mono uppercase bg-slate-100 text-slate-600 font-medium">${t.source_channel || 'DIRECT'}</span>
+          </div>
+          <div class="text-[11px] text-slate-600 truncate font-medium">${t.role || 'Full Stack Developer'}</div>
+          <div class="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+            <span class="truncate max-w-[120px]">${t.recruiter_name || t.contact_email}</span>
+            <span>${(t.last_interaction || '').substring(5, 10)}</span>
+          </div>
+        `;
+        if (cols[stage]) cols[stage].appendChild(card);
+      });
+
+      document.getElementById('crmColCountSent').innerText = counts['OUTREACH_SENT'];
+      document.getElementById('crmColCountReplied').innerText = counts['REPLIED'];
+      document.getElementById('crmColCountLink').innerText = counts['LINK_RECEIVED'];
+      document.getElementById('crmColCountScreening').innerText = counts['SCREENING_REQUESTED'];
+      document.getElementById('crmColCountOffer').innerText = counts['OFFER'];
+    }
+
+    // RENDER PORTALS GRID
+    function renderPortalsGrid() {
+      const container = document.getElementById('portalsGridContainer');
+      if (!container || !globalState) return;
+
+      const portals = globalState.portals || [];
+      let html = '';
+
+      portals.forEach(p => {
+        const pct = Math.min(100, Math.round((p.applied_today / p.daily_limit) * 100));
+        const isHealthy = p.is_healthy;
+        const statusBadge = isHealthy ?
+          '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"><span class="w-1.5 h-1.5 mr-1 rounded-full bg-emerald-500"></span>' + p.session_status + '</span>' :
+          '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200"><span class="w-1.5 h-1.5 mr-1 rounded-full bg-rose-500"></span>' + p.session_status + '</span>';
+
+        html += `
+          <div class="bg-white border border-slate-200/90 rounded-xl p-4 flex flex-col justify-between space-y-3 shadow-xs hover:shadow transition">
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="text-xl">${p.icon}</span>
+                  <div>
+                    <h3 class="font-bold text-slate-900 text-xs">${p.name}</h3>
+                    <span class="text-[10px] text-slate-400 font-medium">${p.category}</span>
+                  </div>
+                </div>
+                ${statusBadge}
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="mt-3">
+                <div class="flex items-center justify-between text-[11px] mb-1">
+                  <span class="text-slate-500">Applies Today:</span>
+                  <span class="font-bold text-slate-900">${p.applied_today} / ${p.daily_limit} <span class="text-slate-400 font-normal">(${pct}%)</span></span>
+                </div>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/40">
+                  <div class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                </div>
+              </div>
+
+              <div class="mt-2.5 text-[10px] text-slate-500 flex items-center justify-between">
+                <span>Refreshed: <strong class="text-slate-700">${p.last_refresh}</strong></span>
+                <span>Tracked: <strong class="text-slate-700">${p.total_jobs}</strong></span>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-2 border-t border-slate-100">
+              <button onclick="triggerQuickAction('apply_${p.key}')" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-semibold py-1.5 rounded-lg transition text-center shadow-2xs">
+                Apply Now
+              </button>
+              ${p.supports_refresh ? `
+                <button onclick="triggerQuickAction('refresh_${p.key}')" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-medium px-2.5 py-1.5 rounded-lg transition shadow-2xs" title="Refresh Profile">
+                  🔄
+                </button>
+              ` : ''}
+              ${!isHealthy ? `
+                <button onclick="triggerQuickAction('login_${p.key}')" class="bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition shadow-2xs">
+                  Login
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // FETCH & RENDER SCREENSHOTS
+    async function fetchScreenshots() {
+      const container = document.getElementById('screenshotsGridContainer');
+      const badge = document.getElementById('debuggerCountBadge');
+      const tabBadge = document.getElementById('tabBadgeScreenshots');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/screenshots').then(r => r.json());
+        const list = res.screenshots || [];
+        if (badge) badge.innerText = `${list.length} captures`;
+        if (tabBadge) tabBadge.innerText = list.length;
+
+        if (list.length === 0) {
+          container.innerHTML = '<div class="col-span-full p-8 text-center text-xs text-slate-400 font-medium">No obstacle screenshots found in logs/. All bots running smoothly.</div>';
+          return;
+        }
+
+        let html = '';
+        list.forEach(s => {
+          const isStuck = s.is_stuck;
+          const badgeClass = isStuck ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200';
+
+          html += `
+            <div class="bg-white border border-slate-200/90 rounded-xl overflow-hidden flex flex-col justify-between shadow-xs hover:shadow transition">
+              <div class="p-3 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <strong class="text-xs text-slate-900 block truncate max-w-[180px]">${s.company}</strong>
+                  <span class="text-[10px] text-slate-400">${s.modified_at} &bull; ${s.size_kb} KB</span>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.2 rounded font-mono uppercase border ${badgeClass} font-semibold">${s.status_tag}</span>
+              </div>
+              <div class="h-44 bg-slate-50 overflow-hidden cursor-pointer relative group flex items-center justify-center p-2" onclick="openLightbox('/api/screenshot/${encodeURIComponent(s.filename)}', '${s.company}')">
+                <img src="/api/screenshot/${encodeURIComponent(s.filename)}" alt="${s.filename}" class="max-h-full max-w-full object-contain rounded transition group-hover:scale-105 duration-300">
+                <div class="absolute inset-0 bg-indigo-900/10 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs font-semibold text-indigo-900 bg-white/40 backdrop-blur-2xs">
+                  Click to Expand ↗
+                </div>
+              </div>
+              <div class="p-2.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between">
+                <button onclick="openLightbox('/api/screenshot/${encodeURIComponent(s.filename)}', '${s.company}')" class="text-[11px] text-indigo-700 hover:text-indigo-900 font-semibold">Zoom View</button>
+                <button onclick="triggerQuickAction('login_workday')" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg font-medium shadow-2xs">Retry Headed</button>
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch (e) {
+        console.error('Error fetching screenshots:', e);
+      }
+    }
+
+    function openLightbox(imgSrc, title) {
+      document.getElementById('lightboxImg').src = imgSrc;
+      document.getElementById('lightboxTitle').innerText = title || 'Screenshot Inspection';
+      document.getElementById('imageLightboxModal').classList.remove('hidden');
+    }
+
+    function closeLightbox() {
+      document.getElementById('imageLightboxModal').classList.add('hidden');
+      document.getElementById('lightboxImg').src = '';
+    }
+
+    // LIVE LOGS
+    async function fetchLiveLogs() {
+      const out = document.getElementById('terminalLogOutput');
+      if (!out) return;
+
+      try {
+        const res = await fetch('/api/logs').then(r => r.json());
+        const lines = res.logs || [];
+        if (lines.length === 0) {
+          out.innerHTML = '<div class="text-slate-500">No logs found in logs/automation.log.</div>';
+          return;
+        }
+
+        let html = '';
+        lines.forEach(l => {
+          let color = 'text-slate-300';
+          if (l.includes('[ERROR]')) color = 'text-rose-400 font-semibold';
+          else if (l.includes('[WARNING]')) color = 'text-amber-400 font-medium';
+          else if (l.includes('🤝') || l.includes('Wave') || l.includes('Submitted')) color = 'text-emerald-400 font-medium';
+          html += `<div class="${color}">${escapeHtml(l)}</div>`;
+        });
+        out.innerHTML = html;
+        out.scrollTop = out.scrollHeight;
+      } catch (e) {
+        out.innerHTML = '<div class="text-rose-400">Error loading live logs.</div>';
+      }
+    }
+
+    // QA MEMORY & QUESTIONS REVIEW FUNCTIONS
+    let globalQABank = {};
+    let globalQAPending = [];
+
+    async function fetchQAPending() {
+      const container = document.getElementById('qaPendingList');
+      if (!container) return;
+
+      try {
+        const res = await fetch(`/api/qa/pending?_t=${Date.now()}`).then(r => r.json());
+        const list = res.questions || [];
+        globalQAPending = list;
+
+        const badge = document.getElementById('qaPendingBadgeHeader');
+        if (badge) badge.innerText = `${list.length} Pending Review`;
+        const tabBadge = document.getElementById('tabBadgeQA');
+        if (tabBadge) tabBadge.innerText = list.length;
+
+        if (list.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-8 bg-slate-50 border border-slate-100 rounded-xl space-y-2">
+              <div class="text-2xl">🎉</div>
+              <div class="font-bold text-xs text-slate-800">All Caught Up!</div>
+              <div class="text-xs text-slate-500 max-w-md mx-auto">No screening questions are pending review. Every application is currently auto-filling according to your verified QA memory.</div>
+            </div>
+          `;
+          return;
+        }
+
+        let html = '';
+        list.forEach(q => {
+          let optsHtml = '';
+          if (q.options && q.options.length > 0) {
+            optsHtml = `<div class="mt-2 flex flex-wrap gap-1.5 items-center">
+              <span class="text-[11px] text-slate-400 font-medium">Quick select:</span>`;
+            q.options.slice(0, 5).forEach(opt => {
+              optsHtml += `<button type="button" onclick="setQAInputValue('${q.id}', '${escapeHtml(opt)}')" class="text-[11px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 px-2 py-0.5 rounded border border-slate-200 transition">${escapeHtml(opt)}</button>`;
+            });
+            optsHtml += `</div>`;
+          }
+
+          html += `
+            <div class="border border-slate-200 bg-slate-50/60 rounded-xl p-4 space-y-3 transition hover:border-indigo-300">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                  <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">${escapeHtml(q.platform || 'ATS')}</span>
+                  <span class="text-xs font-semibold text-slate-700">${escapeHtml(q.company || 'Company')}</span>
+                  <span class="text-[11px] text-slate-400">&bull; ${escapeHtml(q.timestamp || '')}</span>
+                </div>
+                <button onclick="dismissQA('${q.id}')" class="text-xs text-slate-400 hover:text-rose-600 transition">Dismiss &times;</button>
+              </div>
+
+              <div>
+                <p class="font-bold text-sm text-slate-900">${escapeHtml(q.question)}</p>
+                <p class="text-xs text-slate-500 mt-1">
+                  <span class="font-medium text-slate-600">Auto-Answered with default:</span> 
+                  <span class="font-mono bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-800">${escapeHtml(q.default_answered || 'Yes')}</span>
+                </p>
+                ${optsHtml}
+              </div>
+
+              <div class="flex items-center space-x-2 pt-1">
+                <input type="text" id="qaInput_${q.id}" placeholder="Enter your preferred answer for all future applications..." class="flex-1 text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-indigo-500 shadow-2xs">
+                <button onclick="resolveQA('${q.id}')" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition whitespace-nowrap">
+                  Save My Answer
+                </button>
+                <button onclick="resolveQAWithDefault('${q.id}', '${escapeHtml(q.default_answered || 'Yes')}')" class="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium shadow-2xs transition whitespace-nowrap">
+                  Lock Default
+                </button>
+              </div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      } catch (e) {
+        console.error('Error fetching pending QA:', e);
+      }
+    }
+
+    function setQAInputValue(qid, val) {
+      const inp = document.getElementById(`qaInput_${qid}`);
+      if (inp) inp.value = val;
+    }
+
+    async function resolveQA(qid) {
+      const inp = document.getElementById(`qaInput_${qid}`);
+      const val = inp ? inp.value.trim() : '';
+      if (!val) {
+        showToast('Please type or select an answer first.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/qa/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question_id: qid, answer: val })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast('Answer saved! All future jobs will use your preference.', 'success');
+          fetchQAPending();
+          fetchQABank();
+        } else {
+          showToast('Could not save answer.', 'error');
+        }
+      } catch (e) {
+        showToast('Error saving answer', 'error');
+      }
+    }
+
+    async function resolveQAWithDefault(qid, defVal) {
+      setQAInputValue(qid, defVal);
+      await resolveQA(qid);
+    }
+
+    async function dismissQA(qid) {
+      try {
+        const res = await fetch('/api/qa/dismiss', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question_id: qid })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast('Question dismissed.', 'info');
+          fetchQAPending();
+        }
+      } catch (e) {
+        showToast('Error dismissing question', 'error');
+      }
+    }
+
+    async function fetchQABank() {
+      const tbody = document.getElementById('qaBankTableBody');
+      if (!tbody) return;
+
+      try {
+        const res = await fetch(`/api/qa/bank?_t=${Date.now()}`).then(r => r.json());
+        globalQABank = res;
+        renderQABankTable(res);
+      } catch (e) {
+        console.error('Error loading QA bank:', e);
+      }
+    }
+
+    function renderQABankTable(data) {
+      const tbody = document.getElementById('qaBankTableBody');
+      if (!tbody) return;
+
+      const exact = data.exact_questions || {};
+      const patterns = data.patterns || {};
+      const allEntries = [];
+
+      Object.entries(exact).forEach(([k, v]) => allEntries.push({ key: k, answer: v, type: 'Exact Question' }));
+      Object.entries(patterns).forEach(([k, v]) => {
+        if (!exact[k]) allEntries.push({ key: k, answer: v, type: 'Keyword Pattern' });
+      });
+
+      if (allEntries.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-6 text-slate-400">No QA rules in memory bank yet.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      allEntries.forEach(item => {
+        html += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-2.5 px-3">
+              <div class="font-medium text-slate-900">${escapeHtml(item.key)}</div>
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider">${item.type}</span>
+            </td>
+            <td class="py-2.5 px-3">
+              <span class="font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">${escapeHtml(String(item.answer))}</span>
+            </td>
+            <td class="py-2.5 px-3 text-right">
+              <button onclick="deleteQARule('${escapeHtml(item.key)}')" class="text-slate-400 hover:text-rose-600 font-semibold px-2 py-1">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function filterQABankTable() {
+      const q = (document.getElementById('qaSearchInput')?.value || '').toLowerCase();
+      if (!q) {
+        renderQABankTable(globalQABank);
+        return;
+      }
+      const filtered = { exact_questions: {}, patterns: {} };
+      Object.entries(globalQABank.exact_questions || {}).forEach(([k, v]) => {
+        if (k.toLowerCase().includes(q) || String(v).toLowerCase().includes(q)) filtered.exact_questions[k] = v;
+      });
+      Object.entries(globalQABank.patterns || {}).forEach(([k, v]) => {
+        if (k.toLowerCase().includes(q) || String(v).toLowerCase().includes(q)) filtered.patterns[k] = v;
+      });
+      renderQABankTable(filtered);
+    }
+
+    async function promptAddCustomQA() {
+      const q = prompt('Enter the screening question text or key phrase:');
+      if (!q || !q.trim()) return;
+      const a = prompt(`Enter your preferred answer for:\n"${q}"`);
+      if (!a || !a.trim()) return;
+
+      try {
+        const res = await fetch('/api/qa/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q.trim(), answer: a.trim() })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast('Rule added to memory bank!', 'success');
+          fetchQABank();
+        }
+      } catch (e) {
+        showToast('Error saving rule', 'error');
+      }
+    }
+
+    async function deleteQARule(key) {
+      if (!confirm(`Are you sure you want to delete the rule for:\n"${key}"?`)) return;
+
+      try {
+        const res = await fetch('/api/qa/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast('Rule deleted.', 'info');
+          fetchQABank();
+        }
+      } catch (e) {
+        showToast('Error deleting rule', 'error');
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // TRIGGER QUICK ACTION
+    async function triggerQuickAction(actionKey) {
+      showToast(`Triggering action: ${actionKey}...`, 'info');
+      try {
+        const res = await fetch('/api/actions/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: actionKey })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast(res.message, 'success');
+          loadAllData();
+        } else {
+          showToast(res.message || 'Action could not be started', 'error');
+        }
+      } catch (e) {
+        showToast('Error sending action command', 'error');
+      }
+    }
+
+    // AUTO-POLL EVERY 5 SECONDS (Real-time live updates)
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllData();
+      setInterval(() => {
+        loadAllData(false);
+      }, 5000);
+    });
+  </script>
+</body>
+</html>

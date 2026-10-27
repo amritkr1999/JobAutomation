@@ -1,0 +1,601 @@
+{
+  "cold_email": {
+    "active_hours_end": 18,
+    "active_hours_start": 10,
+    "attach_cover_letter": false,
+    "daily_send_limit": 25,
+    "default_role_title": "Full Stack Developer",
+    "enabled": true,
+    "max_delay_seconds": 45,
+    "max_per_domain_per_day": 2,
+    "min_delay_seconds": 20
+  },
+  "deduplication": {
+    "cooldown_days": 14,
+    "enabled": true,
+    "max_per_domain_per_day": 5,
+    "suppressed_domains": [],
+    "suppressed_emails": []
+  },
+  "email": {
+    "sender_app_password": "YOUR_16_CHAR_GMAIL_APP_PASSWORD",
+    "sender_email": "your_email@gmail.com",
+    "sender_name": "Your Full Name",
+    "smtp_port": 587,
+    "smtp_server": "smtp.gmail.com"
+  },
+  "forms": {
+    "apply_limit_per_run": 10,
+    "browser_profile_dir": "./browser_profile/forms",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_apply_limit": 25,
+    "enabled": true,
+    "headless": true,
+    "review_mode": false
+  },
+  "foundit": {
+    "apply_limit_per_run": 25,
+    "browser_profile_dir": "./browser_profile/foundit",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_apply_limit": 50,
+    "enabled": true,
+    "freshness_days": 7,
+    "headless": true,
+    "profile_refresh": {
+      "enabled": true,
+      "upload_fresh_resume": true
+    },
+    "search": {
+      "excluded_title_keywords": [
+        ".net",
+        "c#",
+        "php",
+        "wordpress",
+        "salesforce",
+        "sap ",
+        "abap",
+        "manual testing",
+        "qa automation",
+        "sdet",
+        "director",
+        "vp of",
+        "lead architect"
+      ],
+      "extract_hr_emails_to_dropzone": true,
+      "locations": [
+        "Bengaluru",
+        "Hyderabad",
+        "Pune",
+        "Noida",
+        "Gurgaon",
+        "Mumbai",
+        "Remote"
+      ],
+      "max_min_experience_allowed": 5,
+      "queries": [
+        "Java Full Stack Developer",
+        "Spring Boot Microservices Developer",
+        "Java Backend Developer Spring Boot",
+        "Full Stack Developer React Java",
+        "Python FastAPI Developer"
+      ]
+    }
+  },
+  "greenhouse": {
+    "apply_limit_per_run": 10,
+    "attach_cover_letter": false,
+    "browser_profile_dir": "./browser_profile/greenhouse",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_apply_limit": 25,
+    "enabled": true,
+    "excluded_title_keywords": [
+      ".net",
+      "c#",
+      "php",
+      "wordpress",
+      "salesforce",
+      "sap ",
+      "abap",
+      "manual testing",
+      "qa automation",
+      "sdet",
+      "director",
+      "vp of",
+      "principal architect",
+      "lead architect"
+    ],
+    "headless": true,
+    "locations": [
+      "Remote",
+      "India",
+      "Bengaluru",
+      "Hyderabad",
+      "Pune"
+    ],
+    "queries": [
+      "Full Stack Developer",
+      "Software Engineer",
+      "Backend Engineer",
+      "Java Developer",
+      "Python Developer"
+    ],
+    "review_mode": false,
+    "target_boards": [
+      "stripe",
+      "reddit",
+      "figma",
+      "elastic",
+      "cloudflare",
+      "vercel",
+      "databricks",
+      "gitlab",
+      "mongodb"
+    ]
+  },
+  "indeed": {
+    "apply_limit_per_run": 25,
+    "browser_profile_dir": "./browser_profile/indeed",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_apply_limit": 50,
+    "enabled": true,
+    "freshness_days": 7,
+    "headless": true,
+    "only_easily_apply": true,
+    "search": {
+      "excluded_title_keywords": [
+        ".net",
+        "c#",
+        "php",
+        "wordpress",
+        "salesforce",
+        "sap ",
+        "abap",
+        "manual testing",
+        "qa automation",
+        "sdet",
+        "director",
+        "vp of"
+      ],
+      "extract_hr_emails_to_dropzone": true,
+      "locations": [
+        "Remote",
+        "Bengaluru, Karnataka",
+        "Hyderabad, Telangana",
+        "Pune, Maharashtra"
+      ],
+      "max_min_experience_allowed": 5,
+      "queries": [
+        "Java Full Stack Developer",
+        "Spring Boot Microservices Developer",
+        "Java Backend Developer",
+        "Full Stack Developer React Java",
+        "Python FastAPI Developer"
+      ]
+    }
+  },
+  "instahyre": {
+    "apply_limit_per_run": 50,
+    "browser_profile_dir": "./browser_profile/instahyre",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_apply_limit": 100,
+    "enabled": true,
+    "headless": true,
+    "profile_refresh": {
+      "enabled": true,
+      "refresh_job_preferences": true,
+      "upload_fresh_resume": true
+    },
+    "search": {
+      "default_cover_note": "Hi, I am a Full Stack Developer with 3+ years of experience building scalable applications using modern backend and frontend stacks. I am available to join immediately and excited to contribute to your engineering team.",
+      "extract_hr_emails_to_dropzone": true
+    }
+  },
+  "jobgether": {
+    "apply_limit_per_run": 25,
+    "browser_profile_dir": "./browser_profile/jobgether",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_apply_limit": 50,
+    "enabled": true,
+    "headless": true,
+    "profile_refresh": {
+      "enabled": true,
+      "upload_fresh_resume": true
+    },
+    "search": {
+      "default_pitch_note": "Hi, I am an experienced software engineer skilled in full-stack development, microservices, and cloud deployments. Available immediately and excited to contribute to high-impact projects.",
+      "excluded_title_keywords": [
+        ".net",
+        "c#",
+        "php",
+        "wordpress",
+        "salesforce",
+        "sap ",
+        "manual testing",
+        "qa automation",
+        "sdet",
+        "director",
+        "vp of",
+        "lead architect"
+      ],
+      "extract_hr_emails_to_dropzone": true,
+      "locations": [
+        "Remote",
+        "Worldwide",
+        "Anywhere"
+      ],
+      "max_min_experience_allowed": 5,
+      "queries": [
+        "Full Stack Developer",
+        "Backend Developer",
+        "Software Engineer"
+      ]
+    }
+  },
+  "linkedin": {
+    "auto_prioritize_queries": true,
+    "browser_profile_dir": "./browser_profile/linkedin",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "connection_outreach": {
+      "account_tier": "standard",
+      "agency_search_queries": [
+        "\"Technical Recruiter\" Tech India",
+        "\"IT Recruiter\" Tech India",
+        "\"Staffing Specialist\" Tech India"
+      ],
+      "daily_limit": 10,
+      "enabled": true,
+      "hard_network_cap": 30000,
+      "max_per_company": 1,
+      "min_acceptance_rate_warning": 0.3,
+      "platform_max_weekly_limit": 100,
+      "safe_delay_range_seconds": [
+        4.0,
+        7.5
+      ],
+      "send_without_note_if_quota_exhausted": true,
+      "target_roles": [
+        "post_author",
+        "agency_recruiter",
+        "hiring_manager"
+      ],
+      "templates": {
+        "agency_recruiter": "Hi {first_name}, saw you specialize in tech recruitment. As a software developer, would love to connect and stay on your radar for future openings. Cheers!",
+        "hiring_manager": "Hi {first_name}, noticed your engineering work at {company}. Always keen to connect with fellow backend & cloud engineering folks. Best!",
+        "post_author": "Hi {first_name}, came across your recent tech hiring post. Would love to connect and stay in touch as fellow tech professionals. Cheers!"
+      },
+      "weekly_limit": 80
+    },
+    "daily_apply_limit": 20,
+    "daily_harvest_limit": 100,
+    "enable_ocr_flyers": true,
+    "enabled": true,
+    "headless": true,
+    "max_scrolls_per_query": 8,
+    "max_search_queries_per_run": 6,
+    "post_harvest_limit_per_run": 50,
+    "route_blocking_enabled": true,
+    "search": {
+      "excluded_title_keywords": [
+        ".net",
+        "c#",
+        "php",
+        "wordpress",
+        "salesforce",
+        "sap ",
+        "abap",
+        "manual testing",
+        "qa automation",
+        "sdet",
+        "data entry",
+        "bpo",
+        "director",
+        "vp of",
+        "principal architect",
+        "lead architect"
+      ],
+      "experience_years": 3,
+      "locations": [
+        "Remote",
+        "India",
+        "Bengaluru",
+        "Hyderabad",
+        "Pune",
+        "Noida",
+        "Gurgaon"
+      ],
+      "max_min_experience_allowed": 5,
+      "post_search_queries": [
+        "hiring Java email",
+        "we are hiring share CV (AWS OR Java 21 OR Spring Boot 3)",
+        "(\"immediate joiner\" OR \"urgent\") (\"Python\" OR \"FastAPI\") (\"drop CV\" OR \"send resume\")",
+        "hiring email (Java OR Spring Boot OR Microservices) AND (AWS OR PostgreSQL)"
+      ],
+      "queries": [
+        "Java Full Stack Developer",
+        "Spring Boot Microservices Developer",
+        "Java Backend Developer",
+        "Full Stack Developer React Java",
+        "Python FastAPI React Developer"
+      ]
+    }
+  },
+  "naukri": {
+    "apply_limit_per_run": 50,
+    "browser_profile_dir": "./browser_profile/naukri",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_apply_limit": 100,
+    "enabled": true,
+    "headless": true,
+    "profile_refresh": {
+      "default_headline": "Full Stack Developer | 3+ YOE | Java, Python, React, AWS | Immediate Joiner",
+      "enabled": true,
+      "toggle_headline_heartbeat": true,
+      "upload_fresh_resume": true
+    },
+    "qa_bank": {
+      "current_ctc_inr": "1200000",
+      "current_ctc_lpa": "12",
+      "current_location": "India (Open to Relocate / Remote)",
+      "date_of_birth": "01/01/1998",
+      "date_of_birth_text": "01 January 1998",
+      "dob_day": "01",
+      "dob_month": "01",
+      "dob_year": "1998",
+      "expected_ctc_inr": "1500000",
+      "expected_ctc_lpa": "15",
+      "graduation_year": "2020",
+      "highest_qualification": "B.Tech / B.E. in Computer Science & Engineering",
+      "is_serving_notice": "Yes",
+      "notice_period_days": "15",
+      "notice_period_text": "Immediate / 15 Days",
+      "percentage_cgpa": "8.0",
+      "preferred_locations": "Bangalore, Hyderabad, Pune, Remote",
+      "relevant_experience_years": "3",
+      "shift_flexibility": "Yes",
+      "skill_experience_years": {
+        "aws": "2",
+        "docker": "2",
+        "git": "3",
+        "java": "3",
+        "javascript": "3",
+        "microservices": "3",
+        "postgresql": "3",
+        "python": "2",
+        "react": "3",
+        "rest": "3",
+        "spring boot": "3",
+        "sql": "3"
+      },
+      "total_experience_years": "3",
+      "willing_to_relocate": "Yes",
+      "work_mode_preference": "Yes"
+    },
+    "search": {
+      "excluded_title_keywords": [
+        ".net",
+        "c#",
+        "php",
+        "wordpress",
+        "salesforce",
+        "sap ",
+        "manual testing",
+        "qa automation",
+        "sdet",
+        "director",
+        "vp of"
+      ],
+      "experience_years": 3,
+      "extract_hr_emails_to_dropzone": true,
+      "freshness_days": 7,
+      "include_recommended_jobs": true,
+      "locations": [
+        "Remote",
+        "Bengaluru",
+        "Hyderabad",
+        "Pune"
+      ],
+      "max_min_experience_allowed": 5,
+      "queries": [
+        "Java Full Stack Developer",
+        "Spring Boot Microservices Developer",
+        "Java Backend Developer",
+        "Full Stack Developer React"
+      ],
+      "skip_external_company_sites": true
+    }
+  },
+  "notifications": {
+    "enabled": false,
+    "macos_banner": true,
+    "quiet_mode": true,
+    "telegram": {
+      "alert_on_stuck": true,
+      "alert_on_unknown_question": true,
+      "bot_token": "YOUR_TELEGRAM_BOT_TOKEN",
+      "chat_id": "YOUR_TELEGRAM_CHAT_ID",
+      "daily_digest_enabled": true,
+      "enabled": false,
+      "human_intervention_timeout_sec": 180,
+      "send_screenshots": true
+    },
+    "whatsapp": {
+      "api_key": "",
+      "enabled": false,
+      "phone_number": "",
+      "provider": "callmebot"
+    }
+  },
+  "ollama": {
+    "host": "http://localhost:11434",
+    "model": "llama3.1:8b"
+  },
+  "paths": {
+    "dropzone": "./dropzone",
+    "logs": "./logs",
+    "output": "./output",
+    "templates": "./templates"
+  },
+  "power_management": {
+    "keep_screen_on": false,
+    "prevent_system_sleep": false
+  },
+  "profile": {
+    "approved_projects": [
+      "ProjectOne",
+      "ProjectTwo"
+    ],
+    "current_company": "Current Tech Corp",
+    "current_location": "Bengaluru, India",
+    "email": "your_email@gmail.com",
+    "full_name": "Your Full Name",
+    "github": "https://github.com/yourusername",
+    "linkedin": "https://linkedin.com/in/yourprofile",
+    "location": "Bengaluru, India",
+    "notice_period": "15 days",
+    "phone": "+91-9876543210",
+    "relevant_experience": "3+ Years",
+    "total_experience": "3.5 Years"
+  },
+  "recruiter_copilot": {
+    "auto_apply_links": true,
+    "auto_create_tasks": true,
+    "auto_reply_enabled": false,
+    "available_slots": [
+      "Monday to Friday, 11:00 AM – 1:00 PM IST",
+      "Monday to Friday, 3:00 PM – 6:00 PM IST"
+    ],
+    "default_phone": "+91-9876543210",
+    "enabled": false,
+    "max_emails_per_sync": 50,
+    "max_replies_per_thread_per_day": 1,
+    "notice_period": "15 days",
+    "review_mode": true,
+    "salary_expectation_note": "Open for discussion based on market standard and role requirements",
+    "sync_interval_minutes": 15,
+    "sync_lookback_days": 14
+  },
+  "self_learning": {
+    "ab_testing_enabled": true,
+    "enabled": true,
+    "few_shot_enabled": true,
+    "imap_feedback_sync": false,
+    "imap_server": "imap.gmail.com",
+    "imap_sync_interval_hours": 6,
+    "quality_gate_enabled": true
+  },
+  "shine": {
+    "apply_limit_per_run": 25,
+    "browser_profile_dir": "./browser_profile/shine",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_apply_limit": 50,
+    "enabled": true,
+    "freshness_days": 7,
+    "headless": true,
+    "profile_refresh": {
+      "enabled": true,
+      "upload_fresh_resume": true
+    },
+    "search": {
+      "excluded_title_keywords": [
+        ".net",
+        "c#",
+        "php",
+        "wordpress",
+        "salesforce",
+        "sap ",
+        "manual testing",
+        "qa automation",
+        "sdet"
+      ],
+      "extract_hr_emails_to_dropzone": true,
+      "locations": [
+        "Bengaluru",
+        "Hyderabad",
+        "Pune",
+        "Remote"
+      ],
+      "max_min_experience_allowed": 5,
+      "queries": [
+        "Java Full Stack Developer",
+        "Spring Boot Microservices Developer",
+        "Full Stack Developer React Java"
+      ]
+    }
+  },
+  "wellfound": {
+    "apply_limit_per_run": 20,
+    "browser_profile_dir": "./browser_profile/wellfound",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_apply_limit": 40,
+    "enabled": true,
+    "headless": true,
+    "profile_refresh": {
+      "enabled": true
+    },
+    "search": {
+      "default_pitch_note": "Hi, I am a Full Stack Developer with 3+ years of experience building scalable applications. Immediate joiner and excited to contribute to high-impact product engineering.",
+      "excluded_title_keywords": [
+        ".net",
+        "c#",
+        "php",
+        "wordpress",
+        "salesforce",
+        "sap ",
+        "manual testing",
+        "qa automation"
+      ],
+      "extract_hr_emails_to_dropzone": true,
+      "locations": [
+        "Remote",
+        "India",
+        "Bengaluru"
+      ],
+      "max_min_experience_allowed": 5,
+      "queries": [
+        "Java Full Stack Developer",
+        "Spring Boot Microservices",
+        "Full Stack Developer React"
+      ]
+    }
+  },
+  "workday": {
+    "apply_limit_per_run": 5,
+    "browser_profile_dir": "./browser_profile/workday",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_apply_limit": 20,
+    "enabled": true,
+    "excluded_title_keywords": [
+      ".net",
+      "c#",
+      "php",
+      "wordpress",
+      "manual testing",
+      "qa automation"
+    ],
+    "headless": true,
+    "locations": [
+      "India",
+      "Bengaluru",
+      "Pune",
+      "Remote"
+    ],
+    "postal_code": "560001",
+    "queries": [
+      "Java",
+      "Full Stack",
+      "Software Engineer"
+    ],
+    "review_mode": false,
+    "standard_password": "YourWorkdayAccountPassword123!",
+    "target_portals": [
+      {
+        "name": "Autodesk",
+        "url": "https://autodesk.wd1.myworkdayjobs.com/Ext"
+      },
+      {
+        "name": "Adobe",
+        "url": "https://adobe.wd5.myworkdayjobs.com/external_experienced"
+      }
+    ]
+  }
+}

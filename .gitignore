@@ -1,0 +1,55 @@
+# ==============================================================================
+# Security & Credentials (CRITICAL - NEVER COMMIT)
+# ==============================================================================
+config.json
+.env
+.env.*
+*.pem
+*.key
+*.token
+
+# Active Browser Profiles & Session Cookies (Prevents account hijacking)
+browser_profile/
+*/browser_profile/
+
+# Personal Profile, Resume & Candidate Data
+data/master_resume.json
+templates/resume_template.txt
+templates/cover_letter_template.txt
+*.pdf
+Amrit_Kumar_Resume.pdf
+
+# Personal Output, History & Logs
+output/
+logs/
+dropzone/
+scratch/
+*.log
+
+# Personal Launchd, Apps & OS Service Configurations
+*.plist
+*.app/
+Job Automation Dashboard.app/
+Stop Dashboard.app/
+
+# Python Cache & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+
+# OS & Editor Specific Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace

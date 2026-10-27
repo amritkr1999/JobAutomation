@@ -1,0 +1,131 @@
+{
+  "personal_info": {
+    "full_name": "Alex Mercer",
+    "default_title": "Full Stack Software Engineer",
+    "phone": "+1-555-0199",
+    "email": "alex.mercer@example.com",
+    "location": "San Francisco, CA",
+    "current_location": "San Francisco, CA",
+    "notice_period": "15 days",
+    "total_experience": "4 Years",
+    "relevant_experience": "4 Years",
+    "current_company": "Apex Cloud Systems",
+    "linkedin": "https://linkedin.com/in/alexmercer",
+    "github": "https://github.com/alexmercer"
+  },
+  "summaries": {
+    "default": "Full Stack Engineer with 4+ years of experience architecting and delivering high-performance enterprise applications, microservices, and AI-driven platforms. Skilled in Python, TypeScript, React, Go, and PostgreSQL. Proven track record in optimizing backend performance and building resilient distributed systems.",
+    "backend_java": "Backend Software Engineer with 4+ years of experience designing scalable distributed systems, event-driven architectures (Kafka), and cloud architectures on AWS.",
+    "fullstack": "Full Stack Engineer with 4+ years of experience delivering end-to-end SaaS applications using modern TypeScript, React, Node.js, and cloud platforms.",
+    "cloud_devops": "Cloud & DevOps Engineer specializing in AWS cloud infrastructure, container orchestration, and automated CI/CD pipelines.",
+    "ai_systems": "AI Systems & Full Stack Developer with expertise in building asynchronous AI agent pipelines with Python, local LLMs, and modern web frameworks."
+  },
+  "core_skills": {
+    "Backend & Frameworks": [
+      "Python (FastAPI, Django)",
+      "Node.js / Express",
+      "Java / Spring Boot",
+      "RESTful API Design",
+      "Microservices Architecture",
+      "Kafka",
+      "GraphQL"
+    ],
+    "Cloud & DevOps": [
+      "AWS (EC2, S3, RDS, CloudWatch)",
+      "Docker",
+      "Docker Compose",
+      "GitHub Actions CI/CD",
+      "Linux",
+      "Kubernetes"
+    ],
+    "Programming Languages": [
+      "Python 3.10+",
+      "TypeScript",
+      "JavaScript (ES6+)",
+      "SQL",
+      "Go"
+    ],
+    "Frontend & Mobile": [
+      "React",
+      "Next.js",
+      "TypeScript",
+      "Tailwind CSS",
+      "Redux Toolkit"
+    ],
+    "Databases & Caching": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "MongoDB"
+    ],
+    "AI & Data Engineering": [
+      "Ollama",
+      "OpenAI API",
+      "LangChain",
+      "Pydantic"
+    ]
+  },
+  "experience": [
+    {
+      "id": "apex_cloud",
+      "company": "Apex Cloud Systems",
+      "title": "Software Engineer",
+      "period": "2023 – Present",
+      "location": "San Francisco, CA",
+      "bullets": [
+        {
+          "text": "Architected and delivered multi-tenant microservices supporting 100k+ daily active users.",
+          "tags": ["backend", "microservices", "python", "cloud", "aws"]
+        },
+        {
+          "text": "Optimized database indexing and caching strategies, reducing p99 API response times by 40%.",
+          "tags": ["postgres", "redis", "performance", "optimization"]
+        },
+        {
+          "text": "Automated end-to-end deployment workflows using GitHub Actions and AWS ECS.",
+          "tags": ["devops", "aws", "docker", "ci/cd"]
+        }
+      ]
+    },
+    {
+      "id": "nova_tech",
+      "company": "Nova Technologies",
+      "title": "Junior Full Stack Developer",
+      "period": "2021 – 2023",
+      "location": "Austin, TX",
+      "bullets": [
+        {
+          "text": "Developed responsive customer-facing web dashboards using React and TypeScript.",
+          "tags": ["react", "frontend", "typescript"]
+        },
+        {
+          "text": "Collaborated with cross-functional teams to integrate RESTful endpoints and secure authentication flows.",
+          "tags": ["api", "rest", "fullstack"]
+        }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "autoflow",
+      "name": "AutoFlow",
+      "subtitle": "AI-Powered Workflow Automation Engine",
+      "role": "Creator & Lead Developer",
+      "tags": ["ai", "automation", "python", "react"],
+      "bullets": [
+        "Built an autonomous agent framework using Python, FastAPI, and local LLMs.",
+        "Integrated real-time task notifications via Webhooks and Telegram bots."
+      ]
+    }
+  ],
+  "education_and_certifications": {
+    "degree": "Bachelor of Science in Computer Science",
+    "institution": "State University",
+    "period": "2017 – 2021",
+    "problem_solving": "Solved 300+ algorithms and data structures problems.",
+    "certifications": [
+      "AWS Certified Solutions Architect",
+      "Docker Certified Associate"
+    ]
+  }
+}

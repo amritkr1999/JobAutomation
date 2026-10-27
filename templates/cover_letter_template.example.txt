@@ -1,0 +1,27 @@
+Date: {{date}}
+
+To,
+The Hiring Team / Hiring Manager,
+{{company_name}}
+
+Subject: Application for {{job_title}} Position
+
+Dear Hiring Manager,
+
+I am writing to express my strong interest in the {{job_title}} position at {{company_name}}. With over 4 years of professional experience architecting scalable web applications, robust backend microservices, and dynamic front-end interfaces, I am confident in my ability to hit the ground running and add immediate value to your tech team.
+
+In my recent experience as a Software Engineer, I specialized in designing high-performance RESTful APIs, optimizing database queries, and managing cloud-native containerized infrastructure on AWS. Furthermore, I bring hands-on experience with modern engineering best practices, CI/CD automation, and AI-assisted workflows.
+
+{{tailored_alignment_paragraph}}
+
+As an immediate joiner (Notice Period: {{notice_period}}) based in {{location}}, I am eager to contribute to {{company_name}}'s fast-growing platform. I thrive in dynamic team environments where I can build impactful products and solve complex scaling challenges.
+
+I have attached my tailored resume for your review. Thank you for your time and consideration, and I look forward to discussing how my technical background aligns with your team's goals.
+
+Sincerely,
+
+{{full_name}}
+Contact: {{phone}}
+Email: {{email}}
+LinkedIn: {{linkedin}}
+GitHub: {{github}}
