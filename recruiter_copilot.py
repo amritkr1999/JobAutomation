@@ -82,7 +82,7 @@ def run_recruiter_copilot_cycle(lookback_days: int = 14, max_emails: int = 50,
             )
             applied_results.append(res)
 
-    # 3. Generate context-aware replies for all leads
+    # 3. Generate context-aware replies for actionable leads only
     drafts_created = []
     for lead in leads:
         r_email = lead["from_email"]
@@ -90,8 +90,13 @@ def run_recruiter_copilot_cycle(lookback_days: int = 14, max_emails: int = 50,
         company = lead.get("company", "Company")
         role = lead.get("role", "Software Engineer")
         subject = lead.get("subject", "")
+        body_text = lead.get("body", "")
         intent = lead.get("intent", "GENERAL_INQUIRY")
         message_id = lead.get("message_id", "")
+
+        # Skip non-actionable intents or ignored broadcasts
+        if intent in ("IGNORE", "APPLICATION_RECEIPT", "REJECTION", "INTERVIEW_COMPLETED"):
+            continue
 
         # Check if application link was completed for this recruiter
         link_proof = ""
@@ -105,13 +110,14 @@ def run_recruiter_copilot_cycle(lookback_days: int = 14, max_emails: int = 50,
             company=company,
             role=role,
             original_subject=subject,
-            original_body="",
+            original_body=body_text,
             intent=intent,
             in_reply_to=message_id,
             applied_links_summary=link_proof,
             config=config
         )
-        drafts_created.append(draft_rec)
+        if draft_rec:
+            drafts_created.append(draft_rec)
 
     # 4. Consolidated reporting
     summary = {

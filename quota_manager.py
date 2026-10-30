@@ -117,12 +117,12 @@ def get_all_quotas(today_str=None):
 
     # 1. Pipeline Definitions & Daily Limits
     pipelines = [
-        # ATS & Enterprise Portals
+        # ATS & Enterprise Portals (On-Demand Downstream Handlers)
         {
             "key": "greenhouse",
             "name": "Greenhouse ATS",
             "short_name": "Greenhouse",
-            "category": "Enterprise ATS",
+            "category": "Downstream ATS (On-Demand)",
             "icon": "🏢",
             "file": "greenhouse_applied_jobs.json",
             "obj_key": "applied_jobs",
@@ -130,12 +130,13 @@ def get_all_quotas(today_str=None):
             "limit": config.get("greenhouse", {}).get("daily_apply_limit", 25),
             "run_limit": config.get("greenhouse", {}).get("apply_limit_per_run", 10),
             "enabled": config.get("greenhouse", {}).get("enabled", True),
+            "is_downstream": True,
         },
         {
             "key": "workday",
             "name": "Workday ATS",
             "short_name": "Workday",
-            "category": "Enterprise ATS",
+            "category": "Downstream ATS (On-Demand)",
             "icon": "💼",
             "file": "workday_applied_jobs.json",
             "obj_key": "applied_jobs",
@@ -143,12 +144,13 @@ def get_all_quotas(today_str=None):
             "limit": config.get("workday", {}).get("daily_apply_limit", 20),
             "run_limit": config.get("workday", {}).get("apply_limit_per_run", 5),
             "enabled": config.get("workday", {}).get("enabled", True),
+            "is_downstream": True,
         },
         {
             "key": "forms",
             "name": "Google & MS Forms",
             "short_name": "Web Forms",
-            "category": "Enterprise ATS",
+            "category": "Downstream ATS (On-Demand)",
             "icon": "📋",
             "file": "forms_applied.json",
             "obj_key": "applied_forms",
@@ -156,6 +158,7 @@ def get_all_quotas(today_str=None):
             "limit": config.get("forms", {}).get("daily_apply_limit", 25),
             "run_limit": config.get("forms", {}).get("apply_limit_per_run", 10),
             "enabled": config.get("forms", {}).get("enabled", True),
+            "is_downstream": True,
         },
 
         # Top Job Boards
@@ -326,9 +329,10 @@ def get_all_quotas(today_str=None):
                 p["file"], obj_key=p["obj_key"], status_keys=p["status_keys"], today_str=today_str
             )
 
-        remaining = max(0, limit - applied)
-        percent = round((applied / limit * 100.0), 1) if limit > 0 else 100.0
-        completed = (applied >= limit)
+        is_downstream = p.get("is_downstream", False)
+        remaining = 0 if is_downstream else max(0, limit - applied)
+        percent = 100.0 if is_downstream else (round((applied / limit * 100.0), 1) if limit > 0 else 100.0)
+        completed = True if is_downstream else (applied >= limit)
 
         p_stat = {
             "key": key,
@@ -337,12 +341,13 @@ def get_all_quotas(today_str=None):
             "category": p["category"],
             "icon": p["icon"],
             "applied": applied,
-            "limit": limit,
+            "limit": limit if not is_downstream else applied,
             "run_limit": p["run_limit"],
             "remaining": remaining,
             "percent": percent,
             "completed": completed,
             "enabled": enabled,
+            "is_downstream": is_downstream,
             "total_history": total_history
         }
 
@@ -350,8 +355,9 @@ def get_all_quotas(today_str=None):
 
         if enabled:
             total_applied += applied
-            total_limit += limit
-            total_remaining += remaining
+            if not is_downstream:
+                total_limit += limit
+                total_remaining += remaining
 
     overall_percent = round((total_applied / total_limit * 100.0), 1) if total_limit > 0 else 100.0
     all_completed = (total_remaining == 0)

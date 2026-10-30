@@ -263,7 +263,37 @@
         "hiring_manager": "Hi {first_name}, noticed your engineering work at {company}. Always keen to connect with fellow backend & cloud engineering folks. Best!",
         "post_author": "Hi {first_name}, came across your recent tech hiring post. Would love to connect and stay in touch as fellow tech professionals. Cheers!"
       },
-      "weekly_limit": 80
+      "weekly_limit": 80,
+      "target_hiring_companies": [
+        "Salesforce",
+        "Target",
+        "Autodesk",
+        "Nvidia",
+        "Adobe",
+        "Walmart Global Tech",
+        "Cisco",
+        "Qualcomm",
+        "Microsoft",
+        "Google"
+      ],
+      "target_recruitment_agencies": [
+        "Michael Page",
+        "Randstad India",
+        "TEKsystems",
+        "Allegis Group",
+        "Adecco",
+        "Kelly Services"
+      ],
+      "auto_target_applied_companies": true,
+      "post_acceptance_messaging": {
+        "enabled": true,
+        "max_messages_per_run": 5,
+        "templates": {
+          "agency_recruiter": "Hi {first_name}, thanks for connecting! I'm a Java & Full Stack Developer with 3+ years of experience specializing in Spring Boot, React, and AWS cloud systems. I'm actively exploring new opportunities (immediate joiner). Would love to stay on your radar for any upcoming engineering roles at {company} or within your client network. Looking forward to staying in touch!",
+          "hiring_manager": "Hi {first_name}, thanks for connecting! Noticed your engineering leadership at {company}. I'm a Java & Full Stack Developer with 3+ years of experience building scalable microservices and cloud backends. Always keen to connect with fellow engineering folks and open to discussing relevant opportunities on your team. Best regards!",
+          "default": "Hi {first_name}, thanks for connecting! As a Java & Full Stack Developer with 3+ years of experience in Spring Boot, React, and AWS cloud systems, I'd love to stay connected and on your radar for relevant tech opportunities. Best regards!"
+        }
+      }
     },
     "daily_apply_limit": 20,
     "daily_harvest_limit": 100,

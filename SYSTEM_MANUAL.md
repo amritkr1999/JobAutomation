@@ -35,9 +35,12 @@ graph TD
         QueryEvolution --> NaukriAgent
         QueryEvolution --> LIAgent
         KeywordTracker[Keyword Performance Tracker keyword_tracker.py] --> Dashboard
+        Diagnostics[Live Diagnostics & Telemetry Engine system_diagnostics.py] --> Dashboard
+        Diagnostics --> TelegramNotifier
         ATSBridge[ATS Bridge & URL Unshortener ats_bridge.py] --> GHAgent
         ATSBridge --> WDAgent
         ATSBridge --> FormsAgent
+        LIAgent --> |External ATS URLs| ATSBridge
     end
 
     subgraph Document Engine
@@ -56,11 +59,12 @@ graph TD
         NaukriAgent --> |Extract HR Email from JDs| GD
 
         InstaAgent --> |Fresh Master PDF Upload| InstaRefresh[Instahyre Timestamp Boost]
-        InstaAgent --> |Modal-Scoped Click + JS scrollIntoView| InstaApply[Instahyre 100 Daily Applies]
+        InstaAgent --> |Modal-Scoped Click + JS scrollIntoView| InstaApply[Instahyre 10 Daily Applies]
 
         LIAgent --> |Engine 1: Mine Emails in Past 24h Posts| GD
-        LIAgent --> |Engine 2: Multi-step Modal Form Solver| LIApply[LinkedIn 20 Daily Easy Applies]
-        LIAgent --> |Engine 3: Preload Endpoint + Casual Note| LIConnect[LinkedIn 12 Daily Outreaches]
+        LIAgent --> |Engine 2: Pan-India Virtual Scroll Easy Apply| LIApply[LinkedIn 20 Daily Easy Applies]
+        LIAgent --> |Engine 3: Target Companies & Agency Sourcing| LIConnect[LinkedIn 12 Daily Outreaches]
+        LIAgent --> |Engine 4: Post-Acceptance Direct Pitch| LIMsg[LinkedIn Accepted Connection Follow-Up]
 
         IndeedAgent --> |Easily Apply Modal + QA Bank Solver| IndeedApply[Indeed 50 Daily Applies]
         IndeedAgent --> |Extract HR Email from JDs| GD
@@ -81,13 +85,11 @@ graph TD
         FounditAgent --> |1-Click Apply + Questionnaire Solver| FounditApply[Foundit 50 Daily Applies]
         FounditAgent --> |Extract HR Email from JDs| GD
 
-        GHAgent --> |API Discovery + React-Select Form Solver| GHApply[Greenhouse 25 Daily Applies]
-        GHAgent --> |Embedded Iframe Solver + Direct URL Bridge| GHApply
-
-        WDAgent --> |Keyword Discovery + Multi-Step Wizard Solver| WDApply[Workday 20 Daily Applies]
-        WDAgent --> |Canvas Safe Click + Direct URL Bridge| WDApply
-
-        FormsAgent --> |Universal Field Solver + File Upload| FormsApply[Google & MS Forms 25 Daily Applies]
+        subgraph Downstream ATS Handlers On-Demand
+            GHAgent --> |API Discovery + React-Select Form Solver| GHApply[Greenhouse ATS On-Demand]
+            WDAgent --> |Keyword Discovery + Multi-Step Wizard Solver| WDApply[Workday ATS On-Demand]
+            FormsAgent --> |Universal Field Solver + File Upload| FormsApply[Google & MS Forms On-Demand]
+        end
     end
 
     subgraph Recruiter Copilot & Inbound Feedback Loop
@@ -223,7 +225,7 @@ graph TD
 
 ### D. LinkedIn Automation Engine ([`linkedin_agent.py`](file:///Users/amrit/Documents/JobAutomation/linkedin_agent.py))
 - **Dedicated Chrome Profile**: Runs under `/Users/amrit/Documents/JobAutomation/browser_profile/linkedin`.
-- **Triple Operating Engines**:
+- **Quad Operating Engines**:
   1. **Engine 1: 24h Recruiter Post Harvester & Email Bridge**:
      - Scans real-time LinkedIn feed posts published within the last 24 hours (`datePosted="past-24h"`, sorted by `date_posted`).
      - **Multi-Armed Bandit Query Sorter**: Evaluates historical harvest yield and dynamically prioritizes high-converting Boolean queries while reserving exploration slots for newer queries (`logs/linkedin_query_stats.json`).
@@ -234,21 +236,39 @@ graph TD
      - **Top Comment & URL Capture**: Inspects pinned comments when text hints contact info in comments, and records Activity URN links & recruiter profile URLs.
      - **Closed-Loop Feedback**: Recruiter replies detected via IMAP in `agent.py` are automatically credited back to the originating LinkedIn search query.
      - Auto-generates rich `.txt` tickets directly into Google Drive `Job_Dropzone`, triggering instant tailored PDF and email delivery via `agent.py`.
-  2. **Engine 2: 1-Click Easy Apply Bot**:
-     - Searches LinkedIn Jobs with `f_AL=true` (Easy Apply) and `f_TPR=r86400` (Past 24 hours) across top locations (Remote, India, Bengaluru, Hyderabad, Pune, Gurgaon/Noida, Mumbai).
-     - Solves multi-step dialogs (`div.jobs-easy-apply-modal`): auto-fills phone, numeric experience/CTC fields, selects dropdowns, handles radios ("Yes" for authorized to work, "No" for requiring sponsorship), clicks "Review" and submits.
-     - Enforces conservative rate-limiting (max 20 jobs/day) with humanized jitter (2.5s–4.5s) to preserve account trust.
-  3. **Engine 3: Hiring Manager & Agency Recruiter Connection Outreach (LinkedIn Limit Compliant)**:
-     - Connects with **verified hiring decision-makers** (24h post authors, active hiring managers) and **tech recruitment agency specialists**.
-     - **Official LinkedIn Quotas & Safety Tiers**:
-       - **Standard / Free Accounts**: Enforces rolling 7-day limits with a **safe cap of 80 invites/week** (strictly under the platform's 100/week hard cap) and **12 invites/day** for smooth, natural distribution.
-       - **Account Tier Support**: Configurable via `account_tier` (`standard`, `sales_navigator` with 150/wk cap, or `new_account` for profiles <90 days with 40/wk cap).
+  2. **Engine 2: Pan-India Virtual Scroll 1-Click Easy Apply & ATS Bridge Routing**:
+     - **Pan-India & Remote Search Architecture**: Replaces narrow, hyper-fragmented 66-city search loops with broad, high-volume territory filters (`["India", "Remote"]`) matching the candidate's core stack: *Java Full Stack Developer*, *Java Backend Developer*, *Java Developer*, *Frontend Developer React*, *Full Stack Developer* (3+ YOE).
+     - **Virtual Left-Pane Scroller (`scroll_linkedin_job_cards`)**: LinkedIn virtualizes its job search results listbox (`div.jobs-search-results-list`), unmounting off-screen DOM nodes. The agent scrolls the virtual container incrementally, rendering all 25+ job cards per page reliably without stalling.
+     - **Dual Easy Apply & Downstream ATS Extraction**:
+       - **Easy Apply (`f_AL=true`)**: Automatically solves multi-step modals (`div.jobs-easy-apply-modal`): auto-fills phone, numeric experience/CTC fields, selects dropdowns, handles radios ("Yes" for authorized to work, "No" for requiring sponsorship), clicks "Review" and submits. Enforces safe daily caps (max 20 jobs/day) with humanized jitter (2.5s–4.5s).
+       - **External Apply Bridge Routing**: When encountering external application links (Workday, Greenhouse, Google Forms, Microsoft Forms), intercepts the destination URL and passes it directly to [`ats_bridge.py`](file:///Users/amrit/Documents/JobAutomation/ats_bridge.py) for autonomous execution, ensuring zero lost opportunities.
+  3. **Engine 3: Target Companies & Agency Recruiter Connection Outreach (LinkedIn Limit Compliant)**:
+     - Connects with **verified hiring decision-makers** across five high-intent sourcing channels:
+       1. **Post Authors**: Authors of real-time hiring posts discovered in the last 24h.
+       2. **Agency Recruiters**: Technical recruiters and staffing specialists across India's top talent agencies.
+       3. **Target Hiring Companies (`target_hiring_companies`)**: Engineering managers, tech leads, and HR recruiters at top hiring tech firms (Salesforce, Target, Autodesk, Nvidia, Adobe, Walmart Global Tech, Cisco, Qualcomm, Microsoft, Google, etc.).
+       4. **Target Recruitment Agencies (`target_recruitment_agencies`)**: Specialized tech placement firms (Michael Page, Randstad India, TEKsystems, Allegis Group, Adecco, Kelly Services, CIEL HR, ABC Consultants, Superior Group).
+       5. **Recently Applied Companies (`auto_target_applied_companies`)**: Automatically mines companies applied to across Naukri, Indeed, and external portals from `logs/naukri_applied_jobs.json` and `logs/indeed_applied_jobs.json`, converting cold outreach into warm follow-ups with that company's hiring team.
+     - **Official LinkedIn Quotas & Note Limit Management**:
+       - Free LinkedIn accounts provide only **5 personalized invitation notes per calendar month**. The system utilizes these 5 notes when available, then automatically falls back to sending clean, standard connection requests without a note so outreach is **never blocked or halted**.
+       - Enforces rolling 7-day limits with a **safe cap of 80 invites/week** (strictly under the platform's 100/week hard cap) and **12 invites/day** for smooth, natural distribution.
        - **Hard Network Cap Guard**: Strictly prevents sending invites if first-degree connections approach or reach LinkedIn's **30,000 hard limit**.
-       - **7-Day Temporary Restriction Auto-Lock**: If LinkedIn signals that the dynamic weekly invitation limit is reached, the system automatically detects the modal and engages a **7-day safety cooldown lock** (`restricted_until`), halting connection attempts to preserve account standing.
+       - **7-Day Temporary Restriction Auto-Lock**: Engages a 7-day safety cooldown lock (`restricted_until`) if LinkedIn indicates weekly invitation quotas are reached.
        - **Acceptance Rate & Reputation Health**: Continuously monitors acceptance rate against the **30% threshold** to prevent algorithmic penalties and flags.
-     - **Quota Fallback**: If LinkedIn's free-tier monthly personalized note limit is exhausted (Premium upsell), seamlessly falls back to a clean standard connection request without failing.
-     - **Casual, Zero-Pressure Messaging**: Notes are strictly under 180 characters and maintain a polite peer-networking tone with zero asking for referrals, interviews, or resume reviews.
-     - **Persistent Ledger**: Tracks all invites, statuses (`INVITED`, `ALREADY_CONNECTED`, `ALREADY_PENDING`), notes, and timestamps in [`logs/linkedin_connections.json`](file:///Users/amrit/Documents/JobAutomation/logs/linkedin_connections.json).
+     - **Persistent Ledger**: Tracks all invites, statuses (`INVITED`, `ACCEPTED`, `ALREADY_CONNECTED`, `ALREADY_PENDING`), notes, and timestamps in [`logs/linkedin_connections.json`](file:///Users/amrit/Documents/JobAutomation/logs/linkedin_connections.json).
+  4. **Engine 4: Post-Acceptance Direct Pitch & Relationship Conversion (`check_and_message_accepted_connections`)**:
+     - Periodically sweeps `https://www.linkedin.com/mynetwork/invite-connect/connections/` to detect when a pending invite is accepted by a recruiter or hiring manager.
+     - Automatically transitions contact status in `logs/linkedin_connections.json` from `INVITED` to `ACCEPTED`.
+     - Automatically dispatches a warm, role-tailored direct welcome message (`send_direct_linkedin_message`) directly through LinkedIn Messaging:
+       - **Agency Recruiter Pitch**: Highlights 3+ YOE, Java 21, Spring Boot 3, Microservices, React 19, AWS cloud, immediate 7-day availability, and requests to stay on their radar for upcoming openings.
+       - **Hiring Manager Pitch**: Notes engineering leadership at `{company}`, highlights scalable backend and cloud systems experience, and opens discussion for relevant openings on their team.
+       - **Default Professional Pitch**: Courteous introduction establishing immediate warm contact.
+     - Deduplicates sent messages to guarantee **zero duplicate messages** to the same connection.
+- **CLI Commands for Target Management & Outreach**:
+  - `python3 linkedin_agent.py --list-targets`: Display current list of target hiring companies and recruitment agencies.
+  - `python3 linkedin_agent.py --add-company "Company Name"`: Add a new company to the target hiring list.
+  - `python3 linkedin_agent.py --add-agency "Agency Name"`: Add a new staffing firm to the target recruitment agency list.
+  - `python3 linkedin_agent.py --mode check_accepted`: Check for newly accepted connections and send post-acceptance messages.
 
 ---
 
@@ -349,6 +369,7 @@ graph TD
 ---
 
 ### J. Greenhouse ATS Autonomous Discovery & Form Solver Engine ([`greenhouse_agent.py`](file:///Users/amrit/Documents/JobAutomation/greenhouse_agent.py))
+- **Downstream ATS Architecture (On-Demand Fulfillment)**: Decoupled from static daily quota requirements. Greenhouse operates as a reactive fulfillment handler that processes external application links discovered across LinkedIn, Naukri, Indeed, and Dropzone tickets on-demand, carrying no required daily quota denominator penalty.
 - **Dedicated Chrome Profile**: Runs under `/Users/amrit/Documents/JobAutomation/browser_profile/greenhouse`.
 - **Public Boards API Sweeper (`boards-api.greenhouse.io`)**:
   - Queries Greenhouse's public REST API (`GET https://boards-api.greenhouse.io/v1/boards/{board}/jobs?content=true`) across 22+ top tech companies (Stripe, Databricks, Cloudflare, Reddit, Figma, Elastic, Cockroach Labs, Vercel, GitLab, Brex, Gusto, Pinterest, Discord, etc.).
@@ -373,6 +394,7 @@ graph TD
 ---
 
 ### K. Workday ATS Autonomous Discovery & Multi-Step Wizard Engine ([`workday_agent.py`](file:///Users/amrit/Documents/JobAutomation/workday_agent.py))
+- **Downstream ATS Architecture (On-Demand Fulfillment)**: Decoupled from static daily quota requirements. Workday operates as a reactive fulfillment handler that executes applications for external enterprise links discovered across LinkedIn, Naukri, Indeed, and Dropzone tickets on-demand, carrying no required daily quota denominator penalty.
 - **Dedicated Chrome Profile**: Runs under `./browser_profile/workday`.
 - **Target Enterprise Portals**:
   - Sweeps leading enterprise Workday portals configured in `config.json` (Autodesk, Adobe, Nvidia, Salesforce, Walmart, Cisco, Qualcomm, Target).
@@ -420,6 +442,7 @@ graph TD
 ---
 
 ### M. Google Forms & Microsoft Forms Autonomous Solver Engine ([`forms_agent.py`](file:///Users/amrit/Documents/JobAutomation/forms_agent.py))
+- **Downstream ATS Architecture (On-Demand Fulfillment)**: Decoupled from static daily quota requirements. Forms Agent acts as a reactive solver that parses and completes Google and Microsoft questionnaires discovered across LinkedIn hiring posts, recruiter emails, and Dropzone tickets on-demand, carrying no required daily quota denominator penalty.
 - **Universal Forms Solving**:
   - Automatically navigates, parses, and completes single-page and multi-page application questionnaires on **Google Forms** (`forms.gle`, `docs.google.com/forms`) and **Microsoft Forms** (`forms.office.com`, `forms.microsoft.com`, `forms.cloud.microsoft`).
 - **Questionnaire & Input Controls Coverage**:
@@ -469,6 +492,9 @@ graph TD
 ### O. On-Demand Resume Editor & PDF Generator ([`resume_editor.py`](file:///Users/amrit/Documents/JobAutomation/resume_editor.py), [`resume_engine.py`](file:///Users/amrit/Documents/JobAutomation/resume_engine.py))
 - **Dedicated Recruiter Modification Workflow**: Tailors resume title, professional summary, highlighted skills, and experience bullets in seconds when an HR recruiter calls asking for specific tweaks.
 - **Centralized Master Data Store**: All profile info, skills, bullet pools with keyword tags, and projects live in [`data/master_resume.json`](file:///Users/amrit/Documents/JobAutomation/data/master_resume.json), eliminating hardcoded strings.
+- **Intra-Category Keyword Bubble Sorting**: Automatically re-orders individual technical skills within categories so the specific skills demanded by the JD appear first on the page.
+- **Automated ATS Compatibility & Keyword Gap Auditing**: Evaluates keyword presence across the header, summary, skills, experience, and projects sections, outputting a quantifiable match score ($0-100\%$) and missing keyword alerts (`--score`).
+- **Dynamic Portal & ATS Integration**: Greenhouse, Workday, and Google/Microsoft Forms extract job titles and descriptions live from the DOM and compile on-the-fly tailored 1-page resumes via `ats_bridge.resolve_tailored_resume_for_ats`.
 - **Guaranteed 1-Page ATS PDF Compiler**: Dynamic auto-budgeting algorithm recalculates typography and spacing on the fly so the resume never spills onto an awkward second page.
 - **Instant macOS Preview & Finder**: Automatically pops open the freshly generated PDF in macOS Preview (`open`) and reveals it in Finder for instant email/WhatsApp dispatch.
 - **Triple-Interface Flexibility**: Supports instant terminal one-liners, an interactive step-by-step CLI wizard, and a browser-based local Web UI editor (`--web`).
@@ -504,6 +530,9 @@ graph TD
 - **Interactive Telegram Bot Commands**:
   - `/quota` — Live visual progress bars and remaining applications balance across all 12 pipelines.
   - `/status` — Live summary of today's applications and portal heartbeats.
+  - `/health` — Real-time health audit & bottleneck alerts across all 13 platforms.
+  - `/bottlenecks` — Instant diagnosis of blocking factors, zero-yield queries, or expired sessions.
+  - `/weekly` — 7-day trend analysis, success trajectory, and weekly volume breakdown.
   - `/keywords` — Breakdown of query yields, top performers, and mined keywords.
   - `/tasks` — Live list of pending recruiter tasks, interviews, and action items with interactive `[Mark Done]` buttons.
   - `/pipeline` or `/crm` — Snapshot of active recruiter relationship stages and responses.
@@ -562,22 +591,45 @@ graph TD
 
 ---
 
+### T. Continuous Telemetry & Bottleneck Diagnostics Engine ([`system_diagnostics.py`](file:///Users/amrit/Documents/JobAutomation/system_diagnostics.py))
+- **Unified Health & Bottleneck Intelligence**:
+  - Continuously monitors live health, session validity, DOM feed states, and execution quotas across all 13 platforms.
+  - Automatically classifies operational state per platform: `HEALTHY`, `WARNING`, `CRITICAL`, or `PAUSED`.
+- **Live Anomaly & Bottleneck Classification**:
+  - **Auth / Session Expired**: Detects login session dropouts and prompts interactive one-click re-authentication commands.
+  - **Anti-Bot / WAF Challenge**: Flags Cloudflare / DataDome challenges requiring headed browser execution (`--headed`).
+  - **Rate Limiting / Cooldowns**: Detects temporary HTTP 429 / platform cooldown periods and tracks expiration timers.
+  - **Zero Card / Feed Empty**: Detects when narrow location filters or overly strict keyword constraints exhaust job feeds, recommending query broadening.
+  - **Quota Blocked / Exhausted**: Alerts when monthly or weekly caps (such as LinkedIn's 5 personalized note limit) are reached and verifies graceful fallback execution.
+- **Actionable Self-Healing & Remediation Advice**:
+  - Every diagnostic flag comes with exact copy-paste CLI remediation commands and auto-healing hooks.
+- **7-Day Retrospective Trend Analysis (`--weekly-status`)**:
+  - Aggregates daily application volume, success rates, and dominant bottlenecks across rolling 7-day windows, surfacing weekly trend trajectories (e.g. `UPWARD`, `STABLE`, `RECOVERY_NEEDED`).
+- **Omnichannel Telemetry Interfaces**:
+  - **Terminal Health Audit**: `python3 run_all.py --health` or `python3 system_diagnostics.py`.
+  - **Terminal Weekly Analytics**: `python3 run_all.py --weekly-status` or `python3 system_diagnostics.py --weekly`.
+  - **Real-time Web Dashboard**: Integrated into Mission Control at `http://localhost:8765` via live telemetry endpoints (`/api/diagnostics/live`, `/api/diagnostics/weekly`).
+  - **Telegram Bot Remote Commands**: On-demand mobile diagnostic queries via `/health`, `/bottlenecks`, and `/weekly`.
+
+---
+
 ## 3. Operational Schedules & Autonomous Execution
 
 The system is configured to run **100% autonomously in the background every day** using native macOS `launchd` agents. **You do NOT need to keep any terminal window open.**
 
 | Pipeline / Daemon | Trigger Schedule (IST) | Daily Limit | Execution Mode | What Happens Automatically |
 | :--- | :--- | :--- | :--- | :--- |
-| **`com.amrit.jobautomation.daily`**<br>*(5-Wave Paced Multi-Portal Cycle)* | **5 Daily Waves (IST):<br>• Wave 1: 09:30 AM<br>• Wave 2: 11:30 AM<br>• Wave 3: 01:30 PM<br>• Wave 4: 03:30 PM<br>• Wave 5: 05:30 PM** | **567 total actions / day**<br>(100 Naukri + 100 Instahyre + 50 Indeed + 50 Shine + 50 Jobgether + 50 Foundit + 40 Wellfound + 20 LinkedIn Easy Apply + 25 Greenhouse + 20 Workday + 25 Web Forms + 25 Cold Emails)<br>**+ 100 Recruiter Posts Mined / day**<br>**+ 12 Connection Outreaches / day** | Silent Background (`caffeinate -disu` + Headless) | 1. Spawns `caffeinate -disu` keeping your **Mac awake**.<br>2. Evaluates live quota remaining via `quota_manager.py`.<br>3. Immediately **skips portals that have met their daily cap**.<br>4. Compiles freshly dated Master Resume PDF & refreshes portal timestamps.<br>5. Auto-applies targeted slice on each active platform.<br>6. Sends wave completion update or 100% goal achievement celebration to Telegram.<br>7. Dispatches comprehensive status digest and restores standard power saving. |
+| **`com.amrit.jobautomation.daily`**<br>*(5-Wave Paced Multi-Portal Cycle)* | **5 Daily Waves (IST):<br>• Wave 1: 09:30 AM<br>• Wave 2: 11:30 AM<br>• Wave 3: 01:30 PM<br>• Wave 4: 03:30 PM<br>• Wave 5: 05:30 PM** | **395 core actions / day**<br>(100 Naukri + 10 Instahyre + 50 Indeed + 50 Shine + 50 Jobgether + 50 Foundit + 40 Wellfound + 20 LinkedIn Easy Apply + 25 Cold Emails)<br>**+ On-Demand Downstream ATS**<br>(Greenhouse, Workday, Google/MS Forms processed as external URLs arrive)<br>**+ 100 Recruiter Posts Mined / day**<br>**+ 12 Connection Outreaches / day** | Silent Background (`caffeinate -disu` + Headless) | 1. Spawns `caffeinate -disu` keeping your **Mac awake**.<br>2. Evaluates live quota remaining via `quota_manager.py` (downstream ATS excluded from denominator).<br>3. Immediately **skips portals that have met their daily cap**.<br>4. Compiles freshly dated Master Resume PDF & refreshes portal timestamps.<br>5. Auto-applies targeted slice on each active platform.<br>6. Sends wave completion update or 100% goal achievement celebration to Telegram.<br>7. Dispatches comprehensive status digest and restores standard power saving. |
 | **`com.amrit.jobautomation`**<br>*(Dropzone & Email Watcher)* | **Every 5 Minutes**<br>(Active 10:00 AM – 06:00 PM IST) | Uncapped (respects 14-day recipient cooldown) | Native `launchd` Interval Job (`StartInterval: 300`) | 1. Scans Google Drive `Job_Dropzone` and local `dropzone/`.<br>2. OCRs screenshots / reads text files.<br>3. Extracts recruiter emails and JD requirements with local Ollama.<br>4. Detects direct Greenhouse or Workday job URLs and routes them immediately to specialized ATS solvers.<br>5. Renders customized LaTeX Resume & Cover Letter PDFs.<br>6. Dispatches tailored application emails via Gmail SMTP. |
-| **`com.amrit.jobautomation.bot`**<br>*(Telegram 24/7 Command Listener)* | **Continuous 24/7 Background Listener** | Uncapped (instant real-time polling) | Native `launchd` Persistent Daemon (`KeepAlive: true`) | 1. Runs `notifier.py --bot` in the background continuously.<br>2. Listens for incoming slash commands (`/quota`, `/status`, `/keywords`, `/run [portal]`, `/help`).<br>3. Relays interactive human-in-the-loop responses to unblock stuck forms without touching your Mac.<br>4. Automatically restarts on boot or if network resets. |
+| **`com.amrit.jobautomation.bot`**<br>*(Telegram 24/7 Command Listener)* | **Continuous 24/7 Background Listener** | Uncapped (instant real-time polling) | Native `launchd` Persistent Daemon (`KeepAlive: true`) | 1. Runs `notifier.py --bot` in the background continuously.<br>2. Listens for incoming slash commands (`/quota`, `/status`, `/health`, `/bottlenecks`, `/weekly`, `/keywords`, `/run [portal]`, `/help`).<br>3. Relays interactive human-in-the-loop responses to unblock stuck forms without touching your Mac.<br>4. Automatically restarts on boot or if network resets. |
 
 > [!IMPORTANT]
 > - **Silent Background Multitasking**: Runs 100% headless in the background without popping up Chrome windows or interrupting your work. You can type, browse, and work unbothered.
 > - **Screen & System Keep-Awake (`caffeinate -disu`)**: While any automation runs, the screen stays **ON** and the Mac is prevented from sleeping so the pipeline never halts midway. Once finished, normal sleep schedules resume automatically.
+> - **Downstream ATS Decoupling**: Handlers like Greenhouse, Workday, and Forms process external job links found on LinkedIn and job platforms. They do not carry arbitrary static quota penalties when external links are not present, keeping quota completion accurate.
 > - **Quiet Mode**: Routine per-job notification popups are silenced (`quiet_mode: true`), delivering only the single final completion banner or urgent login requests.
 > - **Fault-Tolerant Execution**: Each phase (Naukri, Instahyre, LinkedIn Harvester, LinkedIn Easy Apply, LinkedIn Outreach, Indeed, Shine, Wellfound, Jobgether, Greenhouse ATS, Workday ATS, Forms, Cold Emails) is isolated with error containment — an issue or timeout in one portal will NEVER halt or block subsequent tasks.
-> - **Anti-Bot Safety Caps**: Daily limits are strictly enforced (100/day for Naukri & Instahyre, 50/day for Indeed, Shine & Jobgether, 40/day for Wellfound, 25/day for Greenhouse, 20/day for Workday, 20/day for LinkedIn Easy Apply, 12/day & 80/rolling week for LinkedIn Outreach [under 100 platform cap]) with human-like delays (1.5s–4.5s; 4.0s–7.5s for outreach) to preserve account trust.
+> - **Anti-Bot Safety Caps**: Daily limits are strictly enforced (100/day for Naukri, 10/day for Instahyre, 50/day for Indeed, Shine & Jobgether, 40/day for Wellfound, 20/day for LinkedIn Easy Apply, 12/day & 80/rolling week for LinkedIn Outreach [under 100 platform cap]) with human-like delays (1.5s–4.5s; 4.0s–7.5s for outreach) to preserve account trust.
 
 ---
 
@@ -744,7 +796,7 @@ python3 linkedin_agent.py --mode harvest --max-harvest 10
 
 ### LinkedIn Hiring Manager & Agency Recruiter Outreach (Free-Account Safe)
 ```bash
-# Run connection outreach to verified hiring authors and agency recruiters
+# Run connection outreach to verified hiring authors, agencies, and target companies
 python3 run_all.py --connect-linkedin
 
 # Or run directly via linkedin_agent.py with custom cap (e.g. 3 invites)
@@ -752,6 +804,29 @@ python3 linkedin_agent.py --mode connect --max-connect 3
 
 # Or run in visible headed Chrome to inspect modal interaction
 python3 linkedin_agent.py --mode connect --headed
+
+# List currently configured target hiring companies & recruitment agencies
+python3 linkedin_agent.py --list-targets
+
+# Add a high-intent company or recruitment agency dynamically
+python3 linkedin_agent.py --add-company "Salesforce"
+python3 linkedin_agent.py --add-agency "Michael Page"
+
+# Check for newly accepted connections and send tailored welcome follow-up messages
+python3 linkedin_agent.py --mode check_accepted
+```
+
+### Continuous Telemetry & Bottleneck Diagnostics Engine
+```bash
+# Run real-time live system health audit across all 13 platforms:
+python3 run_all.py --health
+# Or run directly via diagnostic engine:
+python3 system_diagnostics.py
+
+# Generate 7-day retrospective trend analysis & bottleneck summary:
+python3 run_all.py --weekly-status
+# Or directly:
+python3 system_diagnostics.py --weekly
 ```
 
 ### Cold Email Dispatcher
@@ -775,8 +850,8 @@ python3 run_all.py --optimize
 # 1. Instant recruiter call tailoring (pops up macOS Preview automatically):
 python3 resume_editor.py --company "Swiggy" --role "Senior Backend Engineer" --highlight "Kafka, Redis, Spring Boot" --open
 
-# 2. Tailor using a pasted Job Description text file:
-python3 resume_editor.py --company "Razorpay" --jd-file jd.txt --open
+# 2. Tailor using a pasted Job Description text file + print ATS match score:
+python3 resume_editor.py --company "Razorpay" --jd-file jd.txt --score --open
 
 # 3. Interactive step-by-step terminal wizard:
 python3 resume_editor.py -i
@@ -833,7 +908,7 @@ python3 notifier.py --link
 
 # 7. Start interactive Telegram Bot command listener daemon:
 python3 run_all.py --bot
-# (Text /quota, /status, /keywords, /tasks, /pipeline, /inbound, /run all, /help directly from your smartphone!)
+# (Text /quota, /status, /health, /bottlenecks, /weekly, /keywords, /tasks, /pipeline, /inbound, /run all, /help directly from your smartphone!)
 ```
 
 ### Recruiter Interaction Copilot, CRM & Link Automation
@@ -986,7 +1061,7 @@ All personal, screening, credential, and portal parameters are centralized in [`
   "instahyre": {
     "enabled": true,
     "headless": true,
-    "daily_apply_limit": 100,
+    "daily_apply_limit": 10,
     "apply_limit_per_run": 50,
     "browser_profile_dir": "./browser_profile/instahyre",
     "search": {
@@ -1012,6 +1087,36 @@ All personal, screening, credential, and portal parameters are centralized in [`
       "min_acceptance_rate_warning": 0.30,
       "send_without_note_if_quota_exhausted": true,
       "safe_delay_range_seconds": [4.0, 7.5],
+      "target_hiring_companies": [
+        "Salesforce",
+        "Target",
+        "Autodesk",
+        "Nvidia",
+        "Adobe",
+        "Walmart Global Tech",
+        "Cisco",
+        "Qualcomm",
+        "Microsoft",
+        "Google"
+      ],
+      "target_recruitment_agencies": [
+        "Michael Page",
+        "Randstad India",
+        "TEKsystems",
+        "Allegis Group",
+        "Adecco",
+        "Kelly Services"
+      ],
+      "auto_target_applied_companies": true,
+      "post_acceptance_messaging": {
+        "enabled": true,
+        "max_messages_per_run": 5,
+        "templates": {
+          "agency_recruiter": "Hi {first_name}, thanks for connecting! I'm a Java & Full Stack Developer with 3+ years of experience specializing in Spring Boot, React, and AWS cloud systems. I'm actively exploring new opportunities (immediate joiner). Would love to stay on your radar for any upcoming engineering roles at {company} or within your client network. Looking forward to staying in touch!",
+          "hiring_manager": "Hi {first_name}, thanks for connecting! Noticed your engineering leadership at {company}. I'm a Java & Full Stack Developer with 3+ years of experience building scalable microservices and cloud backends. Always keen to connect with fellow engineering folks and open to discussing relevant opportunities on your team. Best regards!",
+          "default": "Hi {first_name}, thanks for connecting! As a Java & Full Stack Developer with 3+ years of experience in Spring Boot, React, and AWS cloud systems, I'd love to stay connected and on your radar for relevant tech opportunities. Best regards!"
+        }
+      },
       "templates": {
         "agency_recruiter": "Hi {first_name}, saw you specialize in tech recruitment. As a software developer, would love to connect and stay on your radar for future openings. Cheers!",
         "hiring_manager": "Hi {first_name}, noticed your engineering work at {company}. Always keen to connect with fellow engineering folks. Best!",
@@ -1149,6 +1254,9 @@ All personal, screening, credential, and portal parameters are centralized in [`
 ├── generate_manual_pdf.py                 # ReportLab publication-grade PDF manual generator
 │
 ├── run_all.py                             # Unified Command Center, scheduler & CLI orchestrator
+├── system_diagnostics.py                  # Live Continuous Telemetry & Bottleneck Diagnostics Engine
+├── dashboard.py                           # Mission Control FastAPI dashboard server (Port 8765)
+├── manage_dashboard.sh                    # On-Demand Dashboard daemon controller (start/stop/status)
 ├── agent.py                               # Cold Email engine, LaTeX compiler, Ollama OCR parser
 ├── cold_email_agent.py                    # Direct Cold Outreach Engine (list & flyer ingestion)
 ├── ats_bridge.py                          # Universal External ATS & Forms Classifier & Link Unshortener

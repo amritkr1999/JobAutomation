@@ -623,6 +623,10 @@ def main():
     parser.add_argument("--notify-digest", action="store_true", help="Format and dispatch consolidated daily status digest to Telegram / WhatsApp.")
     parser.add_argument("--notify-quota", action="store_true", help="Format and dispatch live quota progress bars report to Telegram.")
     parser.add_argument("--notify-keywords", action="store_true", help="Format and dispatch keyword performance & yield analytics report.")
+    parser.add_argument("--health", "--diagnostics", action="store_true", help="Display live platform bottleneck diagnostics, root cause analysis & overcoming guide.")
+    parser.add_argument("--weekly-status", "--weekly", action="store_true", help="Display 7-day comparative weekly status and platform performance audit.")
+    parser.add_argument("--notify-health", action="store_true", help="Dispatch live bottleneck diagnostics & overcoming guide to Telegram.")
+    parser.add_argument("--notify-weekly", action="store_true", help="Dispatch 7-day comparative weekly status audit to Telegram.")
     parser.add_argument("--bot", action="store_true", help="Launch interactive background Telegram command listener daemon.")
     args = parser.parse_args()
 
@@ -689,6 +693,24 @@ def main():
 
     if args.notify_keywords:
         notifier.send_keyword_report()
+        return
+
+    if args.health:
+        import system_diagnostics
+        print(system_diagnostics.format_daily_diagnostic_cli())
+        return
+
+    if args.weekly_status:
+        import system_diagnostics
+        print(system_diagnostics.format_weekly_status_cli())
+        return
+
+    if args.notify_health:
+        notifier.send_bottleneck_report()
+        return
+
+    if args.notify_weekly:
+        notifier.send_weekly_status_report()
         return
 
     config = email_agent.load_config()

@@ -154,7 +154,7 @@ def compile_pdf_resume(resume_data, output_path, single_page=True, compact_level
     )
     role_left = ParagraphStyle(
         'ResRoleLeft', parent=styles['Normal'],
-        fontName='Helvetica-Bold', fontSize=8.8, leading=10.5,
+        fontName='Helvetica', fontSize=8.8, leading=10.5,
         textColor=PRIMARY_COLOR
     )
     role_right = ParagraphStyle(
@@ -167,22 +167,26 @@ def compile_pdf_resume(resume_data, output_path, single_page=True, compact_level
     story = []
 
     # 1. Header (Name + Adaptive Subtitle + Contact Links)
-    full_name = p_info.get("full_name", "AMRIT KUMAR").upper()
+    full_name = (p_info.get("full_name") or "Amrit Kumar").upper()
     subtitle = resume_data.get("subtitle") or build_adaptive_subtitle(p_info.get("default_title", "Full Stack Developer"))
-    email_addr = p_info.get('email', 'candidate@example.com')
-    phone = p_info.get('phone', '+91-9876543210')
-    linkedin_url = p_info.get('linkedin', 'https://linkedin.com/in/yourprofile')
-    github_url = p_info.get('github', 'https://github.com/yourusername')
+    location = p_info.get('location') or p_info.get('current_location') or 'Bengaluru, India'
+    email_addr = p_info.get('email') or 'amrit.399.ak@gmail.com'
+    phone = p_info.get('phone') or '+91-8789498334'
+    linkedin_url = p_info.get('linkedin') or 'https://linkedin.com/in/AmritKumar'
+    github_url = p_info.get('github') or 'https://github.com/amritkr1999'
+
+    linkedin_display = linkedin_url.replace('https://www.', '').replace('https://', '').rstrip('/')
+    github_display = github_url.replace('https://www.', '').replace('https://', '').rstrip('/')
 
     story.append(Paragraph(full_name, name_style))
     story.append(Spacer(1, 2))
     story.append(Paragraph(subtitle, subtitle_style))
     story.append(Paragraph(
-        f"Mobile: {phone} | Email: <a href=\"mailto:{email_addr}\" color=\"#1A2B4C\">{email_addr}</a>",
+        f"{location} • Phone: {phone} • Email: <a href=\"mailto:{email_addr}\" color=\"#1A2B4C\">{email_addr}</a>",
         contact_style
     ))
     story.append(Paragraph(
-        f"LinkedIn: <a href=\"{linkedin_url}\" color=\"#1A2B4C\">{linkedin_url}</a> | GitHub: <a href=\"{github_url}\" color=\"#1A2B4C\">{github_url}</a>",
+        f"LinkedIn: <a href=\"{linkedin_url}\" color=\"#1A2B4C\">{linkedin_display}</a> • GitHub: <a href=\"{github_url}\" color=\"#1A2B4C\">{github_display}</a>",
         subtitle_style
     ))
     story.append(Spacer(1, 3))
@@ -275,12 +279,16 @@ def compile_pdf_resume(resume_data, output_path, single_page=True, compact_level
     if edu:
         story.append(Paragraph("EDUCATION & CERTIFICATIONS", sec_heading))
         story.append(HRFlowable(width="100%", thickness=0.5, color=DIVIDER_COLOR, spaceAfter=2.5, spaceBefore=0))
-        degree = edu.get('degree', '')
-        inst = edu.get('institution', '')
-        period = edu.get('period', '')
+        degree = edu.get('degree') or 'B.Tech in Computer Science & Engineering'
+        inst = edu.get('institution') or 'Gandhi Institute for Technological Advancement (GITA)'
+        loc = edu.get('location') or 'Bhubaneswar, India'
+        period = edu.get('period') or '2019 – 2023'
         
-        edu_table = Table([[Paragraph(f"<b>{degree}</b>", role_left),
-                            Paragraph(f"{period} | {inst}", role_right)]], colWidths=[330, 226])
+        left_text = f"<b>{degree}</b> — {inst}"
+        right_text = f"{period} | {loc}" if loc else period
+
+        edu_table = Table([[Paragraph(left_text, role_left),
+                            Paragraph(right_text, role_right)]], colWidths=[415, 141])
         edu_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('LEFTPADDING', (0,0), (-1,-1), 0),

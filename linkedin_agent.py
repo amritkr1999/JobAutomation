@@ -1134,19 +1134,37 @@ def run_linkedin_easy_apply(context, page, config, ledger, logs_dir, max_applies
             if applied_this_run >= session_limit or (applies_today + applied_this_run) >= daily_limit:
                 break
 
-            logging.info(f"[LinkedIn Easy Apply] Searching: '{query}' in '{loc}' (Easy Apply, Past 24h)...")
+            logging.info(f"[LinkedIn Job Search] Searching: '{query}' in '{loc}' (Sort by Date, Past Week)...")
             q_enc = urllib.parse.quote(query)
             l_enc = urllib.parse.quote(loc)
-            search_url = f"https://www.linkedin.com/jobs/search/?f_AL=true&f_TPR=r86400&keywords={q_enc}&location={l_enc}&sortBy=DD"
+            
+            time_filter = search_cfg.get('time_filter', 'past-week')
+            tpr_val = 'r604800' if time_filter == 'past-week' else 'r86400'
+            search_all = search_cfg.get('search_all_jobs', True)
+            al_param = "" if search_all else "f_AL=true&"
+            search_url = f"https://www.linkedin.com/jobs/search/?{al_param}f_TPR={tpr_val}&keywords={q_enc}&location={l_enc}&sortBy=DD"
 
             try:
                 page.goto(search_url, wait_until="domcontentloaded", timeout=45000)
                 human_delay(3.0, 4.5)
             except Exception as e:
-                logging.warning(f"[LinkedIn Easy Apply] Navigation warning: {e}")
+                logging.warning(f"[LinkedIn Job Search] Navigation warning: {e}")
                 continue
 
-            # Find job cards in left pane with wait and past-week fallback
+            # Dynamic virtual scroll to populate all job cards in the left pane
+            for _ in range(4):
+                try:
+                    page.evaluate("""
+                        const list = document.querySelector('.jobs-search-results-list') 
+                                  || document.querySelector('.scaffold-layout__list') 
+                                  || document.querySelector('div[tabindex="-1"]');
+                        if (list) list.scrollBy(0, 750);
+                    """)
+                    time.sleep(0.6)
+                except Exception:
+                    pass
+
+            # Find job cards in left pane with wait and fallback
             card_sel = (
                 "li.scaffold-layout__list-item, div.job-card-container, "
                 "div[data-job-id], li.jobs-search-results__list-item, div.base-card, "
@@ -1159,7 +1177,7 @@ def run_linkedin_easy_apply(context, page, config, ledger, logs_dir, max_applies
             job_cards = page.locator(card_sel).all()
 
             if len(job_cards) == 0:
-                fallback_url = f"https://www.linkedin.com/jobs/search/?f_AL=true&f_TPR=r604800&keywords={q_enc}&location={l_enc}&sortBy=DD"
+                fallback_url = f"https://www.linkedin.com/jobs/search/?keywords={q_enc}&location={l_enc}&sortBy=DD"
                 try:
                     page.goto(fallback_url, wait_until="domcontentloaded", timeout=35000)
                     human_delay(2.5, 4.0)
@@ -1171,7 +1189,7 @@ def run_linkedin_easy_apply(context, page, config, ledger, logs_dir, max_applies
                 except Exception:
                     pass
 
-            logging.info(f"[LinkedIn Easy Apply] Found {len(job_cards)} job cards.")
+            logging.info(f"[LinkedIn Job Search] Found {len(job_cards)} job cards for '{query}' in '{loc}'.")
 
             for j_idx, card in enumerate(job_cards):
                 if applied_this_run >= session_limit or (applies_today + applied_this_run) >= daily_limit:
@@ -1207,63 +1225,107 @@ def run_linkedin_easy_apply(context, page, config, ledger, logs_dir, max_applies
                     if any(ex in lower_title for ex in ("c#", ".net", "php", "wordpress", "sdet", "qa", "manual tester")):
                         continue
 
-                    # Locate Easy Apply button
-                    apply_btn = page.locator("button.jobs-apply-button:has-text('Easy Apply'), button:has-text('Easy Apply')").first
-                    if apply_btn.count() == 0 or not apply_btn.is_visible(timeout=1000):
-                        continue
+                    # Check for Easy Apply button
+                    easy_apply_btn = page.locator("button.jobs-apply-button:has-text('Easy Apply'), button:has-text('Easy Apply')").first
+                    is_easy_apply = (easy_apply_btn.count() > 0 and easy_apply_btn.is_visible(timeout=1000))
 
-                    logging.info(f"[LinkedIn Easy Apply] Clicking Easy Apply for '{title}' at '{company}'...")
-                    apply_btn.click(timeout=2500)
-                    human_delay(1.5, 2.5)
+                    if is_easy_apply:
+                        logging.info(f"[LinkedIn Easy Apply] Clicking Easy Apply for '{title}' at '{company}'...")
+                        easy_apply_btn.click(timeout=2500)
+                        human_delay(1.5, 2.5)
 
-                    # Multi-step solver loop (up to 6 steps)
-                    submitted = False
-                    for _ in range(6):
-                        solve_easy_apply_step(page, config)
-                        human_delay(0.6, 1.2)
+                        # Multi-step solver loop (up to 6 steps)
+                        submitted = False
+                        for _ in range(6):
+                            solve_easy_apply_step(page, config)
+                            human_delay(0.6, 1.2)
 
-                        # Check for Submit application button
-                        submit_btn = page.locator("button:has-text('Submit application'), button[aria-label*='Submit application']").first
-                        if submit_btn.count() > 0 and submit_btn.is_visible(timeout=800):
-                            submit_btn.click(timeout=3000)
-                            human_delay(2.0, 3.5)
-                            submitted = True
+                            # Check for Submit application button
+                            submit_btn = page.locator("button:has-text('Submit application'), button[aria-label*='Submit application']").first
+                            if submit_btn.count() > 0 and submit_btn.is_visible(timeout=800):
+                                submit_btn.click(timeout=3000)
+                                human_delay(2.0, 3.5)
+                                submitted = True
+                                break
+
+                            # Check for Review button
+                            review_btn = page.locator("button:has-text('Review'), button[aria-label*='Review your application']").first
+                            if review_btn.count() > 0 and review_btn.is_visible(timeout=800):
+                                review_btn.click(timeout=2000)
+                                human_delay(1.0, 1.8)
+                                continue
+
+                            # Check for Next button
+                            next_btn = page.locator("button:has-text('Next'), button[aria-label*='Continue to next step']").first
+                            if next_btn.count() > 0 and next_btn.is_visible(timeout=800):
+                                next_btn.click(timeout=2000)
+                                human_delay(1.0, 1.8)
+                                continue
+
+                            # If unhandled complex external step, break
                             break
 
-                        # Check for Review button
-                        review_btn = page.locator("button:has-text('Review'), button[aria-label*='Review your application']").first
-                        if review_btn.count() > 0 and review_btn.is_visible(timeout=800):
-                            review_btn.click(timeout=2000)
-                            human_delay(1.0, 1.8)
-                            continue
+                        dismiss_linkedin_modal(page)
 
-                        # Check for Next button
-                        next_btn = page.locator("button:has-text('Next'), button[aria-label*='Continue to next step']").first
-                        if next_btn.count() > 0 and next_btn.is_visible(timeout=800):
-                            next_btn.click(timeout=2000)
-                            human_delay(1.0, 1.8)
-                            continue
+                        if submitted:
+                            applied_this_run += 1
+                            success_msg = f"✅ Applied {applied_this_run} times on LinkedIn: '{title}' at '{company}'"
+                            print(f"\n{success_msg}\n")
+                            logging.info(f"[LinkedIn Easy Apply] {success_msg} ({applies_today + applied_this_run}/{daily_limit} today)")
+                            notify_macos("LinkedIn Easy Apply", f"Applied to {title} at {company}")
 
-                        # If unhandled complex external step, break
-                        break
+                            applied_ledger[job_key] = {
+                                "title": title,
+                                "company": company,
+                                "applied_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "status": "APPLIED"
+                            }
+                            save_linkedin_ledger(logs_dir, ledger)
+                            human_delay(2.5, 4.5)
 
-                    dismiss_linkedin_modal(page)
+                    else:
+                        # Check for External Apply button (Workday, Greenhouse, Google Forms, Company ATS)
+                        ext_btn = page.locator("button.jobs-apply-button, a.jobs-apply-button, button:has-text('Apply'), a:has-text('Apply')").first
+                        if ext_btn.count() > 0 and ext_btn.is_visible(timeout=1000):
+                            try:
+                                ext_href = ext_btn.get_attribute("href") or ""
+                                if not ext_href or ext_href.startswith("#") or "linkedin.com" in ext_href:
+                                    try:
+                                        with context.expect_page(timeout=3500) as new_page_info:
+                                            ext_btn.click(timeout=2000)
+                                        new_p = new_page_info.value
+                                        new_p.wait_for_load_state("domcontentloaded", timeout=6000)
+                                        ext_href = new_p.url
+                                        new_p.close()
+                                    except Exception:
+                                        pass
 
-                    if submitted:
-                        applied_this_run += 1
-                        success_msg = f"✅ Applied {applied_this_run} times on LinkedIn: '{title}' at '{company}'"
-                        print(f"\n{success_msg}\n")
-                        logging.info(f"[LinkedIn Easy Apply] {success_msg} ({applies_today + applied_this_run}/{daily_limit} today)")
-                        notify_macos("LinkedIn Easy Apply", f"Applied to {title} at {company}")
-
-                        applied_ledger[job_key] = {
-                            "title": title,
-                            "company": company,
-                            "applied_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "status": "APPLIED"
-                        }
-                        save_linkedin_ledger(logs_dir, ledger)
-                        human_delay(2.5, 4.5)
+                                if ext_href:
+                                    import ats_bridge
+                                    ats_type, ats_url = ats_bridge.find_ats_url_in_text(ext_href, resolve_shorteners=True)
+                                    if ats_type:
+                                        logging.info(f"[LinkedIn -> ATS Bridge] 🎯 Sourced {ats_type.upper()} external apply: {ats_url}")
+                                        ats_bridge.queue_ats_job_to_dropzone(
+                                            ats_type=ats_type,
+                                            url=ats_url,
+                                            title=title,
+                                            company=company,
+                                            source="LinkedIn",
+                                            config=config
+                                        )
+                                        applied_this_run += 1
+                                        applied_ledger[job_key] = {
+                                            "title": title,
+                                            "company": company,
+                                            "applied_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                            "status": f"QUEUED_{ats_type.upper()}",
+                                            "ats_url": ats_url
+                                        }
+                                        save_linkedin_ledger(logs_dir, ledger)
+                                        notify_macos(f"LinkedIn -> {ats_type.upper()}", f"Routed {title} at {company}")
+                                        print(f"\n🎯 [LinkedIn -> {ats_type.upper()}] Routed '{title}' at '{company}' -> {ats_url}\n")
+                            except Exception as ext_err:
+                                logging.debug(f"[LinkedIn External Apply] Could not capture external link: {ext_err}")
 
                 except Exception as e:
                     logging.debug(f"[LinkedIn Easy Apply] Error processing card: {e}")
@@ -1375,6 +1437,55 @@ def craft_casual_note(candidate, config):
         note = note[:177] + "..."
 
     return note
+
+
+def get_target_hiring_companies(config, logs_dir, limit=15):
+    """
+    Retrieve priority target hiring companies from:
+      1. Configured companies (config.json -> linkedin.connection_outreach.target_hiring_companies)
+      2. Dynamically extracted companies applied to across portal ledgers (Naukri, Indeed, Foundit, Wellfound, Workday)
+    """
+    import glob
+    outreach_cfg = config.get("linkedin", {}).get("connection_outreach", {})
+    configured = outreach_cfg.get("target_hiring_companies", [
+        "Salesforce", "Target", "Autodesk", "Nvidia", "Adobe",
+        "Walmart Global Tech", "Cisco", "Qualcomm", "JPMorganChase",
+        "Morgan Stanley", "Goldman Sachs", "Capco", "Shell"
+    ])
+    companies = [c.strip() for c in configured if c and c.strip()]
+
+    if outreach_cfg.get("auto_target_applied_companies", True):
+        applied_cos = []
+        for fpath in glob.glob(os.path.join(logs_dir, "*applied*.json")):
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    d = json.load(f)
+                    records = d.get("applied_jobs", d.get("applied_forms", []))
+                    if isinstance(records, dict):
+                        records = list(records.values())
+                    for r in sorted(records, key=lambda x: str(x.get("applied_at", "")), reverse=True):
+                        if isinstance(r, dict):
+                            co = r.get("company", "").strip()
+                            if co and len(co) > 2 and co.lower() not in ("confidential", "company", "unknown") and co not in companies and co not in applied_cos:
+                                applied_cos.append(co)
+            except Exception:
+                pass
+        companies.extend(applied_cos)
+
+    return companies[:limit]
+
+
+def get_target_recruitment_agencies(config, limit=10):
+    """
+    Retrieve priority IT & tech staffing recruitment agencies from:
+      config.json -> linkedin.connection_outreach.target_recruitment_agencies
+    """
+    outreach_cfg = config.get("linkedin", {}).get("connection_outreach", {})
+    configured = outreach_cfg.get("target_recruitment_agencies", [
+        "Michael Page", "Randstad India", "TEKsystems", "Allegis Group",
+        "Adecco", "Kelly Services", "CIEL HR", "ABC Consultants", "Superior Group"
+    ])
+    return [a.strip() for a in configured if a and a.strip()][:limit]
 
 
 def gather_outreach_candidates(page, config, ledger, conn_ledger, logs_dir, max_needed=5):
@@ -1511,13 +1622,16 @@ def gather_outreach_candidates(page, config, ledger, conn_ledger, logs_dir, max_
                         break
                     try:
                         href = link.get_attribute("href") or ""
-                        if not href or "/in/" not in href:
+                        if not href or "/in/" not in href or "/opportunities/" in href or "/detail/" in href:
                             continue
                         clean_url = href.split("?")[0].rstrip("/") + "/"
                         if clean_url in seen_urls:
                             continue
 
                         link_text = link.inner_text().strip().replace("\n", " ")
+                        if link_text.lower() in ("see open roles", "view profile", "connect", "follow"):
+                            continue
+
                         # Check card text for relationship distance
                         card_text = ""
                         try:
@@ -1535,8 +1649,10 @@ def gather_outreach_candidates(page, config, ledger, conn_ledger, logs_dir, max_
                             continue
 
                         name_candidate = link_text.split("•")[0].strip()
-                        if not name_candidate or len(name_candidate) > 40:
-                            name_candidate = link_text.split()[0] if link_text else "Recruiter"
+                        if not name_candidate or len(name_candidate) > 40 or name_candidate.lower() in ("see open roles", "view profile", "connect"):
+                            # Try to extract clean name from card_text
+                            first_part = card_text.split("•")[0].strip() if card_text else ""
+                            name_candidate = first_part if (first_part and len(first_part) < 40) else (link_text.split()[0] if link_text else "Recruiter")
 
                         headline_candidate = card_text if card_text else link_text
 
@@ -1554,6 +1670,134 @@ def gather_outreach_candidates(page, config, ledger, conn_ledger, logs_dir, max_
                         logging.debug(f"[LinkedIn Outreach] Error parsing search link: {card_err}")
             except Exception as search_err:
                 logging.warning(f"[LinkedIn Outreach] Search query '{query}' warning: {search_err}")
+
+    # --- Source 3: Target Hiring Companies (Hiring Managers, Engineering Leads & Recruiters) ---
+    target_companies = get_target_hiring_companies(config, logs_dir, limit=12)
+    if target_companies and page and len(candidates) < max_needed:
+        for co in target_companies:
+            if len(candidates) >= max_needed:
+                break
+            try:
+                co_query = f'"{co}" ("Technical Recruiter" OR "Engineering Manager" OR "Talent Acquisition" OR "HR") India'
+                logging.info(f"[LinkedIn Outreach] Searching hiring managers at target company: {co}")
+                encoded_co = urllib.parse.quote(co_query)
+                search_url = f"https://www.linkedin.com/search/results/people/?keywords={encoded_co}&origin=GLOBAL_SEARCH_HEADER"
+                page.goto(search_url, wait_until="domcontentloaded", timeout=30000)
+                human_delay(3.0, 4.5)
+
+                main_loc = page.locator("main").first
+                links = main_loc.locator("a[href*='/in/']").all()
+                for link in links:
+                    if len(candidates) >= max_needed:
+                        break
+                    try:
+                        href = link.get_attribute("href") or ""
+                        if not href or "/in/" not in href or "/opportunities/" in href or "/detail/" in href:
+                            continue
+                        clean_url = href.split("?")[0].rstrip("/") + "/"
+                        if clean_url in seen_urls:
+                            continue
+
+                        link_text = link.inner_text().strip().replace("\n", " ")
+                        if link_text.lower() in ("see open roles", "view profile", "connect", "follow"):
+                            continue
+
+                        card_text = ""
+                        try:
+                            card_text = link.locator("xpath=./ancestor::div[3]").inner_text().strip().replace("\n", " ")
+                        except Exception:
+                            pass
+
+                        if "• 1st" in link_text or "• 1st" in card_text or "· 1st" in card_text:
+                            continue
+
+                        combined_text = f"{link_text} {card_text}"
+                        if not is_hiring_relevant(combined_text):
+                            continue
+
+                        name_cand = link_text.split("•")[0].strip()
+                        if not name_cand or len(name_cand) > 40 or name_cand.lower() in ("see open roles", "view profile", "connect"):
+                            first_part = card_text.split("•")[0].strip() if card_text else ""
+                            name_cand = first_part if (first_part and len(first_part) < 40) else (link_text.split()[0] if link_text else "Manager")
+
+                        candidates.append({
+                            "profile_url": clean_url,
+                            "name": name_cand,
+                            "headline": card_text if card_text else link_text,
+                            "company": co,
+                            "category": "hiring_manager",
+                            "source": f"target_company:{co}"
+                        })
+                        seen_urls.add(clean_url)
+                        logging.info(f"[LinkedIn Outreach] 🎯 Sourced target company manager: '{name_cand}' at '{co}' — {clean_url}")
+                    except Exception:
+                        pass
+            except Exception as e:
+                logging.debug(f"[LinkedIn Outreach] Target company search error for {co}: {e}")
+
+    # --- Source 4: Target Recruitment Agencies ---
+    target_agencies = get_target_recruitment_agencies(config, limit=8)
+    if target_agencies and page and len(candidates) < max_needed:
+        for agency in target_agencies:
+            if len(candidates) >= max_needed:
+                break
+            try:
+                ag_query = f'"{agency}" ("Technical Recruiter" OR "IT Recruiter" OR "Staffing Specialist") India'
+                logging.info(f"[LinkedIn Outreach] Searching agency recruiters: {agency}")
+                encoded_ag = urllib.parse.quote(ag_query)
+                search_url = f"https://www.linkedin.com/search/results/people/?keywords={encoded_ag}&origin=GLOBAL_SEARCH_HEADER"
+                page.goto(search_url, wait_until="domcontentloaded", timeout=30000)
+                human_delay(3.0, 4.5)
+
+                main_loc = page.locator("main").first
+                links = main_loc.locator("a[href*='/in/']").all()
+                for link in links:
+                    if len(candidates) >= max_needed:
+                        break
+                    try:
+                        href = link.get_attribute("href") or ""
+                        if not href or "/in/" not in href or "/opportunities/" in href or "/detail/" in href:
+                            continue
+                        clean_url = href.split("?")[0].rstrip("/") + "/"
+                        if clean_url in seen_urls:
+                            continue
+
+                        link_text = link.inner_text().strip().replace("\n", " ")
+                        if link_text.lower() in ("see open roles", "view profile", "connect", "follow"):
+                            continue
+
+                        card_text = ""
+                        try:
+                            card_text = link.locator("xpath=./ancestor::div[3]").inner_text().strip().replace("\n", " ")
+                        except Exception:
+                            pass
+
+                        if "• 1st" in link_text or "• 1st" in card_text or "· 1st" in card_text:
+                            continue
+
+                        combined_text = f"{link_text} {card_text}"
+                        if not is_hiring_relevant(combined_text):
+                            continue
+
+                        name_cand = link_text.split("•")[0].strip()
+                        if not name_cand or len(name_cand) > 40 or name_cand.lower() in ("see open roles", "view profile", "connect"):
+                            first_part = card_text.split("•")[0].strip() if card_text else ""
+                            name_cand = first_part if (first_part and len(first_part) < 40) else (link_text.split()[0] if link_text else "Recruiter")
+
+                        candidates.append({
+                            "profile_url": clean_url,
+                            "name": name_cand,
+                            "headline": card_text if card_text else link_text,
+                            "company": agency,
+                            "category": "agency_recruiter",
+                            "source": f"target_agency:{agency}"
+                        })
+                        seen_urls.add(clean_url)
+                        logging.info(f"[LinkedIn Outreach] 🎯 Sourced agency recruiter: '{name_cand}' at '{agency}' — {clean_url}")
+                    except Exception:
+                        pass
+            except Exception as e:
+                logging.debug(f"[LinkedIn Outreach] Target agency search error for {agency}: {e}")
 
     return candidates[:max_needed]
 
@@ -1753,6 +1997,173 @@ def send_linkedin_connection(page, candidate, note, config, conn_ledger, logs_di
     return True
 
 
+def send_direct_linkedin_message(page, profile_url, msg_text):
+    """
+    Navigate to an accepted 1st-degree connection's profile and send a direct LinkedIn message.
+    """
+    try:
+        logging.info(f"[LinkedIn Direct Message] Opening profile: {profile_url}")
+        page.goto(profile_url, wait_until="domcontentloaded", timeout=35000)
+        human_delay(2.5, 4.0)
+
+        # Look for primary 'Message' button
+        msg_btn = page.locator("button.artdeco-button:has-text('Message'), a:has-text('Message'), button[aria-label*='Message']").first
+        if msg_btn.count() == 0 or not msg_btn.is_visible(timeout=3000):
+            logging.warning(f"[LinkedIn Direct Message] Message button not found on {profile_url}.")
+            return False
+
+        msg_btn.click(timeout=3000)
+        human_delay(1.5, 2.5)
+
+        # Wait for the chat box / contenteditable textbox
+        textbox_sel = "div[role='textbox'], div.msg-form__contenteditable, div[contenteditable='true'], div.msg-form__message-texteditor"
+        try:
+            page.wait_for_selector(textbox_sel, timeout=5000)
+        except Exception:
+            pass
+
+        textbox = page.locator(textbox_sel).first
+        if textbox.count() == 0 or not textbox.is_visible(timeout=2000):
+            logging.warning(f"[LinkedIn Direct Message] Textbox not found for {profile_url}.")
+            return False
+
+        # Fill message text
+        textbox.click(timeout=2000)
+        human_delay(0.5, 1.0)
+        page.keyboard.type(msg_text, delay=15)
+        human_delay(1.0, 1.8)
+
+        # Locate Send button
+        send_btn = page.locator("button.msg-form__send-button, button[type='submit']:has-text('Send'), button:has-text('Send')").first
+        if send_btn.count() == 0 or not send_btn.is_visible(timeout=2000):
+            page.keyboard.press("Meta+Enter")
+        else:
+            send_btn.click(timeout=3000)
+
+        human_delay(2.0, 3.5)
+
+        # Close the conversation window if overlay is present
+        try:
+            close_btn = page.locator("button[data-control-name='overlay.close_conversation_window'], button[aria-label*='Close conversation'], button[aria-label*='close']").first
+            if close_btn.count() > 0 and close_btn.is_visible(timeout=1000):
+                close_btn.click(timeout=1500)
+        except Exception:
+            pass
+
+        return True
+    except Exception as e:
+        logging.warning(f"[LinkedIn Direct Message] Error sending message to {profile_url}: {e}")
+        return False
+
+
+def check_and_message_accepted_connections(context, page, config, conn_ledger, logs_dir):
+    """
+    1. Visit https://www.linkedin.com/mynetwork/invite-connect/connections/ to detect recently accepted connections.
+    2. Update their status from INVITED/SENT to ACCEPTED in linkedin_connections.json.
+    3. For accepted connections that haven't received a welcome message yet:
+       Send a warm, personalized direct message (referencing their company/recruiter role and candidate's 3+ years Java/Full Stack background).
+    4. Persist welcome_message_sent: True to prevent duplicate messages.
+    """
+    outreach_cfg = config.get("linkedin", {}).get("connection_outreach", {})
+    msg_cfg = outreach_cfg.get("post_acceptance_messaging", {})
+    if not msg_cfg.get("enabled", True):
+        return 0
+
+    max_messages = int(msg_cfg.get("max_messages_per_run", 5))
+    conns = conn_ledger.setdefault("connections", {})
+
+    logging.info("[LinkedIn Connections] Checking recently accepted connections on /mynetwork/invite-connect/connections/...")
+
+    # 1. Navigate to connections list
+    try:
+        page.goto("https://www.linkedin.com/mynetwork/invite-connect/connections/", wait_until="domcontentloaded", timeout=40000)
+        human_delay(3.0, 5.0)
+    except Exception as e:
+        logging.warning(f"[LinkedIn Connections] Navigation to connections page warning: {e}")
+        return 0
+
+    # 2. Scan recent 1st-degree connection cards
+    newly_accepted = 0
+    try:
+        card_sel = "li.mn-connection-card, div.mn-connection-card, div[data-view-name='connection-card']"
+        cards = page.locator(card_sel).all()
+        logging.info(f"[LinkedIn Connections] Found {len(cards)} connection cards on page.")
+
+        for c_idx, card in enumerate(cards[:30]):
+            try:
+                link_loc = card.locator("a[href*='/in/']").first
+                if link_loc.count() == 0:
+                    continue
+                href = link_loc.get_attribute("href") or ""
+                if not href or "/in/" not in href:
+                    continue
+                clean_url = href.split("?")[0].rstrip("/") + "/"
+
+                matched_key = None
+                for tracked_url in conns.keys():
+                    if tracked_url in clean_url or clean_url in tracked_url:
+                        matched_key = tracked_url
+                        break
+
+                if matched_key:
+                    c_info = conns[matched_key]
+                    if c_info.get("status") in ("INVITED", "SENT"):
+                        c_info["status"] = "ACCEPTED"
+                        c_info["accepted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        newly_accepted += 1
+                        logging.info(f"[LinkedIn Connections] 🎉 Connection accepted by: {c_info.get('name')} ({matched_key})")
+                        notify_macos("LinkedIn Connection Accepted", f"{c_info.get('name')} accepted your connection request!")
+            except Exception as card_err:
+                logging.debug(f"[LinkedIn Connections] Card scan error: {card_err}")
+
+        if newly_accepted > 0:
+            save_linkedin_connections_ledger(logs_dir, conn_ledger)
+            logging.info(f"[LinkedIn Connections] Discovered {newly_accepted} newly accepted connections!")
+    except Exception as e:
+        logging.warning(f"[LinkedIn Connections] Error scanning connections: {e}")
+
+    # 3. Send Post-Acceptance Welcome Message to accepted connections
+    accepted_to_message = [
+        (url, info) for url, info in conns.items()
+        if info.get("status") == "ACCEPTED" and not info.get("welcome_message_sent")
+    ]
+
+    if not accepted_to_message:
+        logging.info("[LinkedIn Connections] No pending welcome messages to send.")
+        return newly_accepted
+
+    logging.info(f"[LinkedIn Connections] Found {len(accepted_to_message)} accepted connections awaiting welcome message (Sending up to {max_messages}).")
+    templates = msg_cfg.get("templates", {})
+    sent_messages_count = 0
+
+    for profile_url, info in accepted_to_message[:max_messages]:
+        name = info.get("name") or "there"
+        first_name = name.split()[0] if name else "there"
+        company = info.get("company") or "your organization"
+        category = info.get("category", "default")
+
+        tmpl = templates.get(category) or templates.get("default") or "Hi {first_name}, thanks for connecting! Looking forward to staying in touch."
+        msg_text = tmpl.replace("{first_name}", first_name).replace("{company}", company)
+
+        logging.info(f"[LinkedIn Welcome] Preparing message for {name} ({profile_url}):\n'{msg_text[:80]}...'")
+
+        success = send_direct_linkedin_message(page, profile_url, msg_text)
+        if success:
+            sent_messages_count += 1
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            info["welcome_message_sent"] = True
+            info["welcome_message_at"] = now_str
+            info["welcome_message_text"] = msg_text
+            save_linkedin_connections_ledger(logs_dir, conn_ledger)
+
+            print(f"\n💬 [LinkedIn Welcome Message Sent] To {name} ({company})\n")
+            logging.info(f"[LinkedIn Welcome] Successfully sent welcome message to {name}")
+            notify_macos("LinkedIn Welcome Sent", f"Sent message to {name}")
+            human_delay(3.5, 6.0)
+
+    return sent_messages_count
+
+
 def run_linkedin_connection_outreach(context, page, config, ledger, logs_dir, max_connect_override=None):
     """
     Execute daily LinkedIn connection outreach targeting:
@@ -1771,6 +2182,12 @@ def run_linkedin_connection_outreach(context, page, config, ledger, logs_dir, ma
         return 0
 
     conn_ledger = load_linkedin_connections_ledger(logs_dir)
+
+    # 0. Check for newly accepted connections & send post-acceptance welcome messages
+    try:
+        check_and_message_accepted_connections(context, page, config, conn_ledger, logs_dir)
+    except Exception as e:
+        logging.warning(f"[LinkedIn Outreach] Error checking accepted connections: {e}")
 
     # 1. Platform restriction check (7-day safety lock)
     is_res, res_until = is_platform_restriction_active(conn_ledger)
@@ -1915,6 +2332,14 @@ def run_linkedin_pipeline(mode="all", max_applies=None, max_harvest=None, max_co
                 print("\n[SUCCESS] LinkedIn session verified and persistent Chrome profile is saved!\n")
                 return True
 
+            if mode == "check_accepted":
+                try:
+                    conn_ledger = load_linkedin_connections_ledger(logs_dir)
+                    check_and_message_accepted_connections(context, page, config, conn_ledger, logs_dir)
+                except Exception as e:
+                    logging.error(f"[LinkedIn] Error checking accepted connections: {e}", exc_info=True)
+                return True
+
             if mode in ("all", "harvest"):
                 try:
                     harvest_recruiter_posts(page, config, ledger, logs_dir, max_harvest_override=max_harvest)
@@ -1953,9 +2378,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LinkedIn Autonomous Recruiter Post Harvester, 1-Click Easy Apply & Connection Outreach Agent")
     parser.add_argument(
         "--mode",
-        choices=["all", "login", "harvest", "apply", "connect", "outreach"],
+        choices=["all", "login", "harvest", "apply", "connect", "outreach", "check_accepted"],
         default="all",
-        help="Execution mode: 'login' (login setup), 'harvest' (mine posts), 'apply' (Easy Apply), 'connect' (outreach to hiring managers & agencies), or 'all'."
+        help="Execution mode: 'login', 'harvest', 'apply', 'connect', 'check_accepted', or 'all'."
     )
     parser.add_argument(
         "--max-applies",
@@ -1985,7 +2410,70 @@ if __name__ == "__main__":
         action="store_true",
         help="Run headed Chrome off-screen to avoid covering workspace."
     )
+    parser.add_argument(
+        "--add-company",
+        nargs="+",
+        help="Add one or more target hiring companies to config.json for connection outreach."
+    )
+    parser.add_argument(
+        "--add-agency",
+        nargs="+",
+        help="Add one or more recruitment agencies to config.json for connection outreach."
+    )
+    parser.add_argument(
+        "--list-targets",
+        action="store_true",
+        help="List all configured target hiring companies and recruitment agencies."
+    )
     args = parser.parse_args()
+
+    # Handle quick config management without launching browser
+    if args.add_company or args.add_agency or args.list_targets:
+        cfg = email_agent.load_config()
+        outreach_cfg = cfg.setdefault("linkedin", {}).setdefault("connection_outreach", {})
+
+        if args.add_company:
+            existing_cos = outreach_cfg.setdefault("target_hiring_companies", [])
+            added_c = []
+            for co in args.add_company:
+                co_clean = co.strip()
+                if co_clean and co_clean not in existing_cos:
+                    existing_cos.append(co_clean)
+                    added_c.append(co_clean)
+            config_path = os.path.join(os.path.expanduser('~/Documents/JobAutomation'), 'config.json')
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(cfg, f, indent=2)
+            print(f"✅ Added {len(added_c)} target hiring company(s): {', '.join(added_c)}")
+
+        if args.add_agency:
+            existing_ag = outreach_cfg.setdefault("target_recruitment_agencies", [])
+            added_a = []
+            for ag in args.add_agency:
+                ag_clean = ag.strip()
+                if ag_clean and ag_clean not in existing_ag:
+                    existing_ag.append(ag_clean)
+                    added_a.append(ag_clean)
+            config_path = os.path.join(os.path.expanduser('~/Documents/JobAutomation'), 'config.json')
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(cfg, f, indent=2)
+            print(f"✅ Added {len(added_a)} target recruitment agency(s): {', '.join(added_a)}")
+
+        if args.list_targets:
+            logs_d = os.path.expanduser(cfg.get('paths', {}).get('logs', '~/Documents/JobAutomation/logs'))
+            cos = get_target_hiring_companies(cfg, logs_d, limit=25)
+            ags = get_target_recruitment_agencies(cfg, limit=15)
+            print("\n=======================================================")
+            print("  🎯 TARGET HIRING COMPANIES & RECRUITMENT AGENCIES")
+            print("=======================================================")
+            print("🏢 Target Hiring Companies (Hiring Managers / HR):")
+            for idx, c in enumerate(cos, 1):
+                print(f"  {idx}. {c}")
+            print("\n🤝 Target Recruitment & Staffing Agencies:")
+            for idx, a in enumerate(ags, 1):
+                print(f"  {idx}. {a}")
+            print("=======================================================\n")
+        sys.exit(0)
+
     if args.offscreen:
         os.environ["JOB_AUTO_OFFSCREEN"] = "1"
     with MacKeepAwake():

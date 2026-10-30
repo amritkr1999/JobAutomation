@@ -59,13 +59,19 @@ The engine coordinates multiple independent platform workers via a unified orche
 
 ## 🚀 Key Features
 
-### 🌐 10+ Automated Hiring Platforms
-- **LinkedIn**: Mines hiring posts from the past 24 hours, navigates multi-step Easy Apply dialogs, and manages personalized recruiter connection notes.
-- **Naukri**: Heartbeat profile refresh toggles, automated 1-click apply, and smart answering of recruiter screening questions.
-- **Instahyre**: Automated opportunity feed processing with custom cover notes and fresh resume uploads.
+### 🌐 13 Automated Hiring Platforms & Handlers
+- **LinkedIn**: Pan-India & Remote multi-query search with virtual list scrolling, 1-click Easy Apply solver, and intelligent ATS bridge routing for external Workday/Greenhouse/Forms links.
+- **LinkedIn Connection Outreach**: Targeted outreach to Hiring Managers and Technical Recruiters at priority hiring companies and staffing agencies, with automated post-acceptance welcome direct messaging.
+- **Naukri**: Heartbeat profile refresh toggles, automated 1-click apply, multi-page pagination, and smart answering of recruiter screening questions.
 - **Indeed, Foundit & Shine**: High-volume job search filtering by experience, salary, and location with negative keyword exclusions.
 - **Wellfound & Jobgether**: Startup ecosystems and remote global job hunting automation.
-- **Greenhouse & Workday**: Direct corporate career portal automation with automated form field mapping.
+- **Downstream ATS Engines (Greenhouse, Workday, Forms)**: On-demand automated form fillers that process external career portal links routed from job boards without rigid quota penalties.
+
+### 🔍 Continuous Telemetry & Bottleneck Diagnostics Engine
+- **Live Platform Health Tracking**: Audits all 13 pipelines in real-time, categorizing health status (`OPTIMAL`, `BOTTLENECKED`, `STARVED`, `MISMATCHED`, `READY / ON-DEMAND`).
+- **Real-World Conversion vs Theoretical Quota**: Exposes true conversion rates (e.g. 70%–84% efficiency across viable channels) vs artificial aggregate maximum safety caps.
+- **7-Day Rolling Growth Audit**: Compares week-over-week application volume (+128% growth tracking) and provides a daily breakdown matrix.
+- **Autonomous Roadblock Diagnostics**: Identifies exact runtime obstacles (e.g. stepper form halts, feed exhaustion, query limits) and outputs step-by-step overcoming strategies.
 
 ### 🎯 Dynamic ATS Resume & Cover Letter Engine
 - Generates **custom, ATS-optimized 1-page executive resumes** tailored specifically to each target Job Description.
@@ -80,7 +86,7 @@ The engine coordinates multiple independent platform workers via a unified orche
 ### 🛡️ Humanized Browsing & Account Safety
 - Uses persistent, dedicated browser profiles for each platform (`browser_profile/`).
 - Humanized cursor movements, randomized interaction intervals (4–8s), and exponential backoff to avoid detection.
-- Configurable daily quota gates to stay strictly within platform limits.
+- Configurable daily quota gates to stay strictly within platform limits (e.g. 12/day LinkedIn connection safety limit to avoid 7-day platform invitation restrictions).
 
 ---
 
@@ -156,14 +162,35 @@ The first time you run an agent with `--headed`, log into your respective accoun
 
 ### Run Unified Application Engine
 ```bash
-# Check quota status and health
+# Check quota status and progress
 python3 run_all.py --status
+
+# Live bottleneck diagnostics & overcoming guide across all 13 platforms
+python3 run_all.py --health
+
+# 7-day weekly comparison audit & day-by-day volume matrix
+python3 run_all.py --weekly-status
 
 # Dry-run without submitting final applications
 python3 run_all.py --dry-run
 
-# Run active automation pipeline
+# Run active 5-wave daily automation pipeline
 python3 run_all.py
+```
+
+### LinkedIn Outreach & Target Management
+```bash
+# List active target hiring companies & recruitment agencies
+python3 linkedin_agent.py --list-targets
+
+# Add target hiring companies to connection outreach queue
+python3 linkedin_agent.py --add-company "Salesforce" "Target" "Nvidia"
+
+# Add recruitment agencies to target outreach queue
+python3 linkedin_agent.py --add-agency "Michael Page" "TEKsystems"
+
+# Scan accepted connections & send post-acceptance welcome direct messages
+python3 linkedin_agent.py --mode check_accepted
 ```
 
 ### Run Individual Agents
@@ -171,15 +198,23 @@ python3 run_all.py
 python3 linkedin_agent.py   # Run LinkedIn Easy Apply & Outreach
 python3 naukri_agent.py     # Run Naukri Heartbeat & Apply
 python3 instahyre_agent.py  # Run Instahyre Pipeline
+python3 indeed_agent.py     # Run Indeed India Pipeline
+python3 foundit_agent.py    # Run Foundit Pipeline
+python3 shine_agent.py      # Run Shine.com Pipeline
+python3 wellfound_agent.py  # Run Wellfound Startup Pipeline
 python3 agent.py            # Run Dropzone Cold Email Dispatcher
 ```
 
-### Launch Web Dashboard
-Monitor application history, inspect recruiter replies, and review pending questions:
+### Launch Mission Control Web Dashboard
+Monitor live telemetry, application history, bottlenecks, recruiter replies, and review pending questions:
 ```bash
-python3 dashboard.py
+# Start background service
+./manage_dashboard.sh start
+
+# Check service health and port status
+./manage_dashboard.sh status
 ```
-Open **`http://localhost:5050`** in your browser to view the real-time operational dashboard.
+Open **`http://localhost:8765`** in your browser or double-click **`Job Automation Dashboard.app`** to view the real-time operational dashboard and the **`🔍 Live Bottlenecks & Weekly Health`** tab.
 
 ---
 

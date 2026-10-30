@@ -233,3 +233,48 @@ def dispatch_ats_url(ats_type: str, url: str, config: dict, dry_run: bool = Fals
         logging.warning(f"[ATS Bridge] Unsupported ATS type: {ats_type}")
         return False
 
+
+def resolve_tailored_resume_for_ats(config: dict, company: str = "", job_title: str = "", jd_text: str = "") -> str:
+    """
+    Generate or retrieve a company-tailored 1-page ATS PDF resume matching the target job.
+    Falls back gracefully to the fresh master resume if company/title is unspecified or on error.
+    """
+    import naukri_agent
+    master_path = naukri_agent.ensure_master_resume_pdf(config)
+
+    # If neither company, job title, nor JD text is provided, use master resume
+    if not company and not job_title and not jd_text:
+        return master_path
+
+    try:
+        from agent import create_tailored_pdf_resume
+        paths = config.get("paths", {})
+        output_dir = os.path.expanduser(paths.get("output", "~/Documents/JobAutomation/output"))
+        os.makedirs(output_dir, exist_ok=True)
+
+        clean_co = re.sub(r'[^a-zA-Z0-9_-]', '_', (company or "OPPORTUNITY").strip()).strip('_')
+        tailored_pdf_path = os.path.join(output_dir, f"AMRIT_KUMAR_{clean_co}.pdf")
+
+        clean_role = job_title.strip() if job_title else "Full Stack Developer"
+        jd_info = {
+            "company_name": company,
+            "job_title": clean_role,
+            "key_requirements": []
+        }
+
+        create_tailored_pdf_resume(
+            tailored_pdf_path,
+            profile=config.get("profile", {}),
+            jd_info=jd_info,
+            jd_text=jd_text
+        )
+
+        if os.path.exists(tailored_pdf_path) and os.path.getsize(tailored_pdf_path) > 1000:
+            logging.info(f"[ATS Bridge] 🎯 Tailored 1-page resume generated for {company} ({clean_role}) -> {os.path.basename(tailored_pdf_path)}")
+            return tailored_pdf_path
+    except Exception as e:
+        logging.warning(f"[ATS Bridge] Failed to generate tailored resume for {company}: {e}")
+
+    return master_path
+
+

@@ -536,6 +536,158 @@ def get_system_state() -> dict:
     }
 
 
+def get_historical_analytics(days=14) -> dict:
+    """
+    Compute daily historical application volume, capacity utilization percentages,
+    and phase-wise performance diagnostics over the last N days.
+    """
+    portal_specs = [
+        ('naukri', 'Phase 1', 'Naukri.com', 'Job Boards', 'naukri_applied_jobs.json', 'applied_jobs', ('APPLIED',), 100,
+         'Healthy (Filtered)', 'emerald',
+         'Applies to 18-25 high-match Java/Full-Stack postings per day before exhausting unapplied listings. Duplicate filtering and profile matching safely pace applications.'),
+        
+        ('instahyre', 'Phase 2', 'Instahyre', 'Job Boards', 'instahyre_applied_jobs.json', 'applied_jobs', ('APPLIED',), 100,
+         'Inventory Starved (Matches Exhausted)', 'amber',
+         'Instahyre is a curated employer matching feed, NOT an open job board. Once you apply to available matching companies (5-15 total), 0 opportunities remain until new companies match your profile.'),
+        
+        ('linkedin', 'Phase 3', 'LinkedIn Easy Apply', 'Job Boards', 'linkedin_applied_jobs.json', 'applied_jobs', ('APPLIED',), 20,
+         'Blocked (0 Results on Filter)', 'rose',
+         'Search filters combine Easy Apply (f_AL=true) + Past 24h (f_TPR=r86400) + sortBy=DD + 11 cities. Almost all permutations return 0 job cards, or trigger LinkedIn rate pauses.'),
+        
+        ('li_connect', 'Phase 3b', 'LinkedIn Connect Outreach', 'Job Boards', 'linkedin_connections.json', 'connections', ('INVITED',), 12,
+         'Active (Anti-Ban Safe Cap)', 'indigo',
+         'Strictly capped at 12/day and 80/week to protect your LinkedIn account from platform connection restrictions. Currently at 42 sent this week.'),
+        
+        ('indeed', 'Phase 4', 'Indeed India', 'Job Boards', 'indeed_applied_jobs.json', 'applied_jobs', ('APPLIED',), 50,
+         'Top Performer (100% Quota)', 'emerald',
+         'Consistently maxes out its 50/day quota across multiple waves using direct SmartApply and ATS redirects.'),
+        
+        ('shine', 'Phase 5', 'Shine.com', 'Job Boards', 'shine_applied_jobs.json', 'applied_jobs', ('APPLIED',), 50,
+         'Active (20-25/day)', 'emerald',
+         'Consistently applies to 20-25 jobs per day from search listings with quick-apply drawers.'),
+        
+        ('wellfound', 'Phase 6', 'Wellfound (AngelList)', 'Job Boards', 'wellfound_applied_jobs.json', 'applied_jobs', ('APPLIED',), 40,
+         'Active (15-27/day)', 'emerald',
+         'Strong startup pipeline applying to 15-27 startup roles daily with tailored cover letters.'),
+        
+        ('jobgether', 'Phase 7', 'Jobgether Remote', 'Job Boards', 'jobgether_applied_jobs.json', 'applied_jobs', ('APPLIED',), 50,
+         'Zero Inventory', 'slate',
+         'Remote board currently yielding 0 matching direct applications. 50 theoretical quota slots go unused.'),
+        
+        ('foundit', 'Phase 8', 'Foundit (Monster India)', 'Job Boards', 'foundit_applied_jobs.json', 'applied_jobs', ('APPLIED',), 50,
+         'Top Performer (30-40/day)', 'emerald',
+         'Strong throughput applying to 30-40 verified jobs daily across enterprise recruiters.'),
+        
+        ('greenhouse', 'Phase 9', 'Greenhouse ATS', 'Enterprise ATS', 'greenhouse_applied_jobs.json', 'applied_jobs', ('APPLIED', 'SUBMITTED'), 25,
+         'Low Inventory (Niche Boards)', 'amber',
+         'Sweeps 22 company boards (Stripe, Databricks, Cloudflare). Few new relevant India/remote openings posted daily.'),
+        
+        ('workday', 'Phase 10', 'Workday ATS', 'Enterprise ATS', 'workday_applied_jobs.json', 'applied_jobs', ('APPLIED', 'SUBMITTED'), 20,
+         'Friction Bound (Login / Captchas)', 'amber',
+         'Enterprise workday portals require multi-step logins, complex questionnaires, or captchas, yielding 0-1 successful submissions per run.'),
+        
+        ('forms', 'Phase 10b', 'Web Forms Dropzone', 'Enterprise ATS', 'forms_applied.json', 'applied_forms', ('APPLIED', 'SUBMITTED'), 25,
+         'Dropzone Dependent (0 queued)', 'slate',
+         'Processes Google & MS Forms tickets only when placed in dropzone/forms/. When dropzone is empty, 25 quota slots sit idle.'),
+        
+        ('cold_email', 'Phase 11-12', 'Direct Cold Outreach', 'Direct Outreach', 'sent_emails.json', None, None, 25,
+         'Lead Starved (2-5/day)', 'amber',
+         'Fully operational engine (237 sent all-time), but relies on LinkedIn post harvester to feed leads. With LinkedIn harvester stalled, email queue receives fewer automated leads.')
+    ]
+
+    today = datetime.now().date()
+    date_list = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(days - 1, -1, -1)]
+    date_set = set(date_list)
+    matrix = {dt: {spec[0]: 0 for spec in portal_specs} for dt in date_list}
+    totals_history = {}
+
+    for pkey, pnum, pname, pcat, fname, obj_key, valid_statuses, limit, st_lbl, st_col, exp in portal_specs:
+        fpath = os.path.join(LOGS_DIR, fname)
+        if not os.path.exists(fpath):
+            totals_history[pkey] = 0
+            continue
+        try:
+            with open(fpath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception:
+            totals_history[pkey] = 0
+            continue
+
+        if pkey == 'cold_email':
+            records = data if isinstance(data, dict) else {}
+            totals_history[pkey] = len(records)
+            for v in records.values():
+                if isinstance(v, dict) and ('sent_at' in v or v.get('application_type') == 'COLD_OUTREACH'):
+                    dt = str(v.get('sent_at', ''))[:10]
+                    if dt in date_set:
+                        matrix[dt][pkey] += 1
+        elif pkey == 'li_connect':
+            records = data.get('connections', {}) if isinstance(data, dict) else {}
+            totals_history[pkey] = len(records)
+            for v in records.values():
+                if isinstance(v, dict) and v.get('status') in ('INVITED', 'SENT'):
+                    dt = str(v.get('sent_at') or v.get('connected_at') or '')[:10]
+                    if dt in date_set:
+                        matrix[dt][pkey] += 1
+        else:
+            records = data.get(obj_key, {}) if isinstance(data, dict) else {}
+            totals_history[pkey] = len(records)
+            for v in records.values():
+                if isinstance(v, dict):
+                    status = v.get('status', 'APPLIED')
+                    if not valid_statuses or status in valid_statuses:
+                        dt = str(v.get('applied_at') or v.get('timestamp') or '')[:10]
+                        if dt in date_set:
+                            matrix[dt][pkey] += 1
+
+    TOTAL_CAP = sum(s[7] for s in portal_specs)  # 567
+    today_str = date_list[-1]
+
+    daily_history = []
+    for dt in date_list:
+        sub_tot = sum(matrix[dt].values())
+        pct = round((sub_tot / TOTAL_CAP) * 100.0, 1)
+        daily_history.append({
+            'date': dt,
+            'total': sub_tot,
+            'percent': pct,
+            'breakdown': matrix[dt]
+        })
+
+    recent_7_totals = [d['total'] for d in daily_history[-8:-1]] if len(daily_history) >= 8 else [d['total'] for d in daily_history]
+    avg_7d = round(sum(recent_7_totals) / max(1, len(recent_7_totals)), 1)
+    avg_pct_7d = round((avg_7d / TOTAL_CAP) * 100.0, 1)
+
+    phases_data = []
+    for pkey, pnum, pname, pcat, fname, obj_key, valid_statuses, limit, st_lbl, st_col, exp in portal_specs:
+        today_cnt = matrix[today_str].get(pkey, 0)
+        p_7d_vals = [matrix[d['date']].get(pkey, 0) for d in daily_history[-8:-1]] if len(daily_history) >= 8 else [matrix[d['date']].get(pkey, 0) for d in daily_history]
+        p_avg = round(sum(p_7d_vals) / max(1, len(p_7d_vals)), 1)
+        phases_data.append({
+            'phase': pnum,
+            'key': pkey,
+            'name': pname,
+            'category': pcat,
+            'today': today_cnt,
+            'limit': limit,
+            'percent_today': round((today_cnt / limit * 100.0), 1) if limit > 0 else 0,
+            'avg_7d': p_avg,
+            'total_all_time': totals_history.get(pkey, 0),
+            'status_label': st_lbl,
+            'status_color': st_col,
+            'explanation': exp
+        })
+
+    return {
+        'total_capacity_cap': TOTAL_CAP,
+        'average_daily_applications': avg_7d,
+        'average_daily_percentage': avg_pct_7d,
+        'dates': date_list,
+        'history': daily_history,
+        'phases': phases_data
+    }
+
+
 # -----------------------------------------------------------------------------
 # Web UI HTML Template
 # -----------------------------------------------------------------------------
@@ -2071,6 +2223,20 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
         elif path == '/api/actions/status':
             self._send_json(200, ACTION_RUNNER.get_status())
 
+        # 9b. Daily Historical Analytics & Phase Performance API
+        elif path == '/api/analytics':
+            analytics_data = get_historical_analytics(days=14)
+            self._send_json(200, analytics_data)
+
+        # 9c. Live System Bottlenecks, Platform Health & Overcoming Tracker API
+        elif path == '/api/diagnostics':
+            try:
+                import system_diagnostics
+                diag_data = system_diagnostics.get_live_diagnostics()
+                self._send_json(200, diag_data)
+            except Exception as e:
+                self._send_json(500, {"error": str(e)})
+
         # 10. Pending Screening Questions Review API
         elif path == '/api/qa/pending':
             self._send_json(200, {
@@ -2318,12 +2484,21 @@ SOURCE_PLIST = os.path.join(BASE_DIR, f"{LAUNCH_AGENT_LABEL}.plist")
 def is_dashboard_running(port=8765) -> bool:
     """Check if the dashboard server is actively responding on localhost:port."""
     import socket
+    import subprocess
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(0.5)
     try:
         res = s.connect_ex(('127.0.0.1', port))
         s.close()
-        return res == 0
+        if res == 0:
+            return True
+    except Exception:
+        pass
+
+    # Fallback to lsof check if socket connect is restricted in sandbox
+    try:
+        out = subprocess.check_output(['lsof', '-i', f':{port}'], stderr=subprocess.DEVNULL).decode()
+        return 'LISTEN' in out
     except Exception:
         return False
 

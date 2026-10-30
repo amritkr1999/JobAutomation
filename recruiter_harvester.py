@@ -24,13 +24,18 @@ BASE_DIR = os.path.expanduser('~/Documents/JobAutomation')
 CONFIG_PATH = os.path.join(BASE_DIR, 'config.json')
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 
-# Heuristics for Noise and Automated Broadcast Exclusion
+# Heuristics for Noise, Newsletters, Promo Ads and Automated Broadcast Exclusion
 IGNORED_SENDERS_REGEX = re.compile(
-    r'(?i)(mailer-daemon|no-?reply|donotreply|notifications?|alerts?|updates?|newsletters?|'
+    r'(?i)(mailer-daemon|no-?reply|donotreply|do-not-reply|notifications?|alerts?|updates?|newsletters?|'
     r'marketing|promotions?|digest|mailer@|jobmessenger@|indeedapply@|jobs\.shine\.com|'
     r'shine\.com|monsterindia\.com|indeed\.com|naukri\.com|glassdoor\.com|'
     r'invitations@linkedin\.com|jobalerts-noreply@linkedin\.com|alert@naukri\.com|'
-    r'messages-noreply@linkedin\.com|engage@indeed\.com)'
+    r'messages-noreply@linkedin\.com|engage@indeed\.com|substack\.com|'
+    r'flyai\.airindia\.com|em\.linkedin\.com|hello\.stackoverflow\.email|talent500\.co|'
+    r'support@|billing@|info@|contact@|feedback@|events?@|webinars?@|'
+    r'amazon\.in|hdfcbank|cdslstatement|grammarly|ambitionbox|remotehunter|'
+    r'opportunities@foundit\.in|myworkday\.com|talent\.icims\.com|ppfas\.com|'
+    r'team@hi\.wellfound\.com|accommodationrequests@maersk\.com)'
 )
 
 HIRING_KEYWORDS = [
@@ -160,7 +165,17 @@ def classify_message_intent(subject: str, body: str, links: list) -> tuple:
     """
     text = (subject + " " + body).lower()
 
-    # 0. Automated Portal Notification / Confirmation Check
+    # 0. Promotional, Marketing, Webinar, & Newsletter Checks
+    promo_cues = [
+        "invitation credits expiring", "savings of up to", "special discount",
+        "webinar", "register for free", "join our live session", "newsletter",
+        "manage preferences", "to stop receiving these emails", "exclusive offer",
+        "inside claude code", "sponsored"
+    ]
+    if any(q in text for q in promo_cues):
+        return "IGNORE", "NEUTRAL", False, None
+
+    # 0.1 Automated Portal Notification / Confirmation Check
     auto_notif_cues = [
         "your application has been submitted", "application submitted successfully",
         "job recommendations for", "jobs matching your profile",
@@ -457,6 +472,7 @@ def harvest_recruiter_emails(lookback_days: int = 14, max_emails: int = 50) -> d
                 "company": company,
                 "role": role,
                 "subject": subject,
+                "body": body_text,
                 "intent": intent,
                 "links": classified_links,
                 "message_id": message_id

@@ -760,8 +760,40 @@ def apply_to_greenhouse_job(browser_context, job_info, config, dry_run=False, re
         page.close()
         return False
 
-    # Ensure Master Resume PDF is freshly generated
-    resume_pdf_path = naukri_agent.ensure_master_resume_pdf(config)
+    # Extract actual job title and company if generic placeholders were provided
+    if title in ("Software Role", "Direct Greenhouse Application", "Role"):
+        try:
+            t_el = page.locator("h1.app-title, .job-title, h1").first
+            if t_el.count() > 0:
+                title = t_el.inner_text().strip()
+        except Exception:
+            pass
+    if company in ("Tech Company", "Company"):
+        try:
+            m_co = re.search(r'greenhouse\.io/([^/]+)', url)
+            if m_co and m_co.group(1) not in ("embed", "jobs"):
+                company = m_co.group(1).replace('-', ' ').title()
+            else:
+                c_el = page.locator(".company-name, [data-qa='company-name']").first
+                if c_el.count() > 0:
+                    company = c_el.inner_text().strip()
+        except Exception:
+            pass
+
+    # Extract job description text from page for ATS tailoring
+    jd_text = ""
+    try:
+        desc_el = target.locator("#content, .content, #main, .job-description, div.body").first
+        if desc_el.count() > 0:
+            jd_text = desc_el.inner_text()[:4000]
+    except Exception:
+        pass
+
+    # Generate company-tailored 1-page ATS resume via ATS Bridge
+    import ats_bridge
+    resume_pdf_path = ats_bridge.resolve_tailored_resume_for_ats(
+        config, company=company, job_title=title, jd_text=jd_text
+    )
 
     # Solve and fill the form
     solve_greenhouse_form(page, target, config, resume_pdf_path, dry_run=dry_run)

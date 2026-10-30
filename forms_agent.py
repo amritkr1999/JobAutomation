@@ -1178,6 +1178,24 @@ def apply_single_url(url: str, config: dict, dry_run: bool = False, force_headed
             page.goto(url, wait_until="domcontentloaded", timeout=45000)
             human_delay(2.5, 4.0)
 
+            # Extract form title & context for dynamic ATS resume tailoring
+            form_title = ""
+            form_desc = ""
+            try:
+                title_el = page.locator("div.F9NWFb, div[role='heading'][aria-level='1'], span.office-form-title-content, h1").first
+                if title_el.count() > 0:
+                    form_title = title_el.inner_text().strip()
+                desc_el = page.locator(".freebirdFormviewerViewHeaderDescription, .office-form-subtitle, div.description").first
+                if desc_el.count() > 0:
+                    form_desc = desc_el.inner_text().strip()[:2000]
+            except Exception:
+                pass
+
+            import ats_bridge
+            resume_pdf_path = ats_bridge.resolve_tailored_resume_for_ats(
+                config, company=form_title, job_title=form_title, jd_text=f"{form_title}\n{form_desc}"
+            )
+
             # Detect platform
             page_content = page.content().lower()
             current_url = page.url.lower()

@@ -333,10 +333,10 @@ def compose_cold_email_body(company_name, recruiter_name, profile, variant_id="v
         
     full_name = profile.get('full_name', 'Amrit Kumar')
     notice = profile.get('notice_period', '7 days')
-    phone = profile.get('phone', '+91-9876543210')
-    email_addr = profile.get('email', 'candidate@example.com')
-    linkedin = profile.get('linkedin', 'https://linkedin.com/in/yourprofile')
-    github = profile.get('github', 'https://github.com/yourusername')
+    phone = profile.get('phone', '+91-8789498334')
+    email_addr = profile.get('email', 'amrit.399.ak@gmail.com')
+    linkedin = profile.get('linkedin', 'https://linkedin.com/in/AmritKumar')
+    github = profile.get('github', 'https://github.com/amritkr1999')
     target_target = f"{company_name}'s engineering team" if company_name else "your engineering team"
     
     if variant_id == "variant_b":
@@ -344,10 +344,10 @@ def compose_cold_email_body(company_name, recruiter_name, profile, variant_id="v
 
 I hope this email finds you well. I am reaching out to proactively explore Full Stack and Backend Engineering opportunities with {target_target}.
 
-Over the past 3+ years as a Full Stack Developer at Tech Solutions Inc. and Global Software Systems, I have engineered scalable enterprise microservices, modern frontends, and cloud pipelines:
+Over the past 3.5 years as a Full Stack Developer at Ishavx Technology and Argusoft, I have engineered scalable enterprise microservices, modern frontends, and cloud pipelines:
 • Core Technologies: Java 21, Spring Boot 3, Microservices, React 19, Python FastAPI, PostgreSQL, AWS (EC2, S3, RDS).
 • Engineering Impact: Reduced API response times by 35% and database query latency by 40% across high-volume production datasets.
-• Availability: Immediate / {notice} Notice Period.
+• Availability: Immediate Joiner ({notice} Notice Period).
 
 Whether you have active openings or upcoming engineering initiatives, I would welcome the chance to connect for a brief introductory call.
 

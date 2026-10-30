@@ -165,12 +165,12 @@ def sync_and_promote_winning_examples(logs_dir=LOGS_DIR):
         # If summary or alignment wasn't saved in record, craft a gold-standard reference from the real win
         if not summary:
             summary = (
-                f"Full Stack Developer with 3+ years of experience delivering scalable enterprise systems at Tech Solutions Inc. and Global Software Systems. "
+                f"Full Stack Developer with 3.5 years of experience delivering scalable enterprise systems at Ishavx Technology and Argusoft. "
                 f"Specialized in Java 21, Spring Boot 3, Microservices, and cloud deployments on AWS, reducing DB latency by 40% and server response times by 35%."
             )
         if not alignment:
             alignment = (
-                f"In my previous roles at Tech Solutions Inc. and Global Software Systems, I built production Spring Boot 3 microservices and tuned high-throughput PostgreSQL databases—"
+                f"In my previous roles at Ishavx Technology and Argusoft, I built production Spring Boot 3 microservices and tuned high-throughput PostgreSQL databases—"
                 f"slashing API latency by 35% and database query times by 40%. My expertise with Java 21, microservices architecture, and AWS directly addresses {company}'s engineering objectives."
             )
 
@@ -448,15 +448,15 @@ def score_lead_relevance(job_title, content_text="", company_name="", recruiter_
             score += 10
             reasons.append(f"Corporate Domain Credibility (+10: @{domain})")
 
-    # Clamping
+    # Clamping & Strict Quality Filtering
     final_score = max(0, min(100, score))
-    tier = "HIGH" if final_score >= 70 else ("MEDIUM" if final_score >= 45 else "LOW")
+    tier = "HIGH" if final_score >= 75 else ("MEDIUM" if final_score >= 60 else "LOW")
 
     return {
         "score": final_score,
         "tier": tier,
         "reasons": reasons,
-        "action": "PROCEED" if final_score >= 45 else "DISCARD"
+        "action": "PROCEED" if final_score >= 60 else "DISCARD"
     }
 
 

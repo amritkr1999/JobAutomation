@@ -103,6 +103,7 @@ def draft_response_content(intent: str, recruiter_name: str, company: str, role:
     config = config or load_config()
     copilot_cfg = config.get("recruiter_copilot", {})
     profile = config.get("profile", {})
+    qa_cfg = config.get("naukri", {}).get("qa_bank", {})
 
     greeting_name = recruiter_name.strip() if recruiter_name and not recruiter_name.startswith("http") else "Hiring Team"
     company_name = company if company and company not in ("Company", "Unknown Company") else "the team"
@@ -113,8 +114,10 @@ def draft_response_content(intent: str, recruiter_name: str, company: str, role:
         "Monday to Friday, 3:00 PM – 6:00 PM IST"
     ])
     slots_formatted = "\n".join([f"• {s}" for s in slots])
-    phone = copilot_cfg.get("default_phone", profile.get("phone", "+91-9876543210"))
-    notice = copilot_cfg.get("notice_period", profile.get("notice_period", "7 days"))
+    phone = copilot_cfg.get("default_phone", profile.get("phone", "+91-8789498334"))
+    notice = copilot_cfg.get("notice_period", profile.get("notice_period", "7 days (Immediate Joiner)"))
+    current_ctc = qa_cfg.get("current_ctc_lpa", "12") + " LPA"
+    expected_ctc = qa_cfg.get("expected_ctc_lpa", "15") + " LPA"
 
     # Try Ollama first
     prompt = f"""
@@ -123,11 +126,23 @@ Company: {company_name}
 Role: {role_name}
 Recruiter Intent: {intent}
 Applied Link Proof: {applied_links_summary}
-Candidate Details: Notice Period: {notice}, Phone: {phone}, Availability Slots: {slots}
+Candidate Facts:
+- Candidate Name: Amrit Kumar
+- Role: Full Stack Software Engineer (3.5 YOE: Java 21, Spring Boot 3, Microservices, React 19, Python FastAPI, PostgreSQL, AWS)
+- Current Company: {profile.get("current_company", "Ishavx Technology")}
+- Current CTC: {current_ctc}
+- Expected CTC: {expected_ctc}
+- Notice Period: {notice}
+- Location: Bengaluru, India (Open to Remote / Relocation / Hybrid)
+- Phone: {phone}
+- Availability Slots: {slots}
 Recruiter Email Snippet:
-"{original_body[:300]}"
+"{original_body[:400]}"
 
-Draft the exact email reply text. Be direct and polite.
+Instructions:
+1. If the recruiter asked about CTC or notice period, explicitly provide Current CTC ({current_ctc}), Expected CTC ({expected_ctc}), and Notice Period ({notice}).
+2. Be direct, courteous, professional, and concise. No generic pleasantries.
+3. Sign off as 'Amrit Kumar'.
 """
     ai_draft = query_ollama_draft(prompt, config)
     if ai_draft and len(ai_draft) > 60 and "Amrit" in ai_draft:
@@ -164,11 +179,14 @@ Draft the exact email reply text. Be direct and polite.
             f"Hi {greeting_name},\n\n"
             f"Thank you for getting back to me regarding the {role_name} role at {company_name}!\n\n"
             f"Here are the requested details for your consideration:\n"
-            f"• Notice Period: {notice} (Immediate joiner)\n"
+            f"• Current CTC: {current_ctc}\n"
+            f"• Expected CTC: {expected_ctc}\n"
+            f"• Notice Period: {notice}\n"
             f"• Total & Relevant Experience: 3.5 Years (Java 21, Spring Boot 3, Microservices, React 19, FastAPI, PostgreSQL, AWS)\n"
-            f"• Current Location: Bengaluru (Open to Remote, Hybrid, or Relocation)\n"
-            f"• Compensation / CTC: Open for discussion aligned with the position and company standards.\n\n"
-            f"I have also attached my latest resume for your review. Please let me know what the upcoming stages in your interview process look like.\n\n"
+            f"• Current Location: Bengaluru (Open to Remote, Hybrid, or Relocation)\n\n"
+            f"I am available for a brief discussion during the following slots:\n"
+            f"{slots_formatted}\n\n"
+            f"Please let me know a suitable time, and feel free to reach me directly at {phone}. I have also attached my latest resume for your review.\n\n"
             f"Best regards,\n"
             f"Amrit Kumar\n"
             f"{phone}"
@@ -286,6 +304,27 @@ def queue_or_dispatch_reply(recruiter_email: str, recruiter_name: str, company: 
     Creates context-aware reply. In Review Mode (default), saves draft and alerts
     via Telegram with inline approval buttons. In Auto mode, dispatches immediately.
     """
+    # Prevent drafting replies to no-reply, newsletter or automated broadcast addresses
+    ignored_patterns = re.compile(
+        r'(?i)(mailer-daemon|no-?reply|donotreply|do-not-reply|notifications?|alerts?|updates?|newsletters?|'
+        r'marketing|promotions?|digest|mailer@|jobmessenger@|indeedapply@|jobs\.shine\.com|'
+        r'shine\.com|monsterindia\.com|indeed\.com|naukri\.com|glassdoor\.com|'
+        r'invitations@linkedin\.com|jobalerts-noreply@linkedin\.com|alert@naukri\.com|'
+        r'messages-noreply@linkedin\.com|engage@indeed\.com|substack\.com|'
+        r'flyai\.airindia\.com|em\.linkedin\.com|hello\.stackoverflow\.email|talent500\.co|'
+        r'support@|billing@|info@|contact@|feedback@|events?@|webinars?@|'
+        r'amazon\.in|hdfcbank|cdslstatement|grammarly|ambitionbox|remotehunter|'
+        r'opportunities@foundit\.in|myworkday\.com|talent\.icims\.com|ppfas\.com|'
+        r'team@hi\.wellfound\.com|accommodationrequests@maersk\.com)'
+    )
+    if ignored_patterns.search(recruiter_email):
+        logging.info(f"[ReplyAgent] Skipping draft for automated/broadcast sender: {recruiter_email}")
+        return {}
+
+    if intent in ("IGNORE", "APPLICATION_RECEIPT", "REJECTION", "INTERVIEW_COMPLETED"):
+        logging.info(f"[ReplyAgent] Skipping draft for non-actionable intent ({intent}) from {recruiter_email}")
+        return {}
+
     config = config or load_config()
     copilot_cfg = config.get("recruiter_copilot", {})
     review_mode = copilot_cfg.get("review_mode", True)

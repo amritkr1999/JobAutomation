@@ -323,21 +323,23 @@ def query_ai_for_answer(question_text: str, options: Optional[List[str]] = None,
 
     opts_prompt = f"Available Options (choose ONE exact string):\n{options}\n" if options else "Format: Short answer or 1-2 professional sentences.\n"
 
+    profile = config.get("profile", {})
+    curr_company = profile.get("current_company", "Ishavx Technology")
     system_prompt = (
         "You are answering a job application screening question on behalf of candidate Amrit Kumar.\n"
         "Candidate Facts:\n"
         "- Role: Full Stack Software Engineer with 3.5 years of experience (Java 21, Spring Boot 3, Microservices, React 19, Python FastAPI, PostgreSQL, AWS, Docker)\n"
-        "- Location: Bengaluru, Karnataka, India\n"
+        "- Location: Bengaluru, Karnataka, India (Open to Relocation / Hybrid / Remote)\n"
         "- Work Authorization: India (Yes), US/International (Requires Sponsorship)\n"
         "- Notice Period: 7 days (Immediate joiner)\n"
         "- Current CTC: 12 LPA, Expected CTC: 15 LPA\n"
-        "- Current Employer: Tech Solutions Inc.\n"
+        f"- Current Employer: {curr_company}\n"
         "- Willing to relocate, commute, work hybrid/onsite/rotational shifts: Yes\n"
         "- Background: No criminal record, no sanctions, not disabled\n"
         "Instructions:\n"
         "1. If Available Options are provided, return ONLY the exact matching text of the single best option.\n"
         "2. If asking for a number, return ONLY the digits (e.g. 3).\n"
-        "3. If asking open-ended text, answer concisely in 1-2 professional sentences in the first person.\n"
+        "3. If asking open-ended text, answer concisely in 2-3 high-impact, professional sentences in the first person.\n"
         "4. Output raw text only. No quotes, markdown, or commentary."
     )
 
@@ -352,13 +354,13 @@ def query_ai_for_answer(question_text: str, options: Optional[List[str]] = None,
             "stream": False,
             "options": {
                 "temperature": 0.1,
-                "num_predict": 60
+                "num_predict": 140
             }
         }
         res = requests.post(url, json=payload, timeout=timeout)
         if res.status_code == 200:
             raw_text = res.json().get("response", "").strip()
-            clean_text = raw_text.strip('"').strip("'").splitlines()[0].strip()
+            clean_text = " ".join(line.strip() for line in raw_text.strip('"\'').splitlines() if line.strip())
             if clean_text:
                 if options:
                     matched = pick_best_option(clean_text, options)
@@ -427,13 +429,22 @@ def generate_contextual_fallback(question_text: str, options: Optional[List[str]
         return "https://linkedin.com/in/yourprofile"
 
     if any(w in q_low for w in ("github", "git", "portfolio")):
-        return "https://github.com/yourusername"
+        return "https://github.com/amritkr1999"
 
-    if any(w in q_low for w in ("why", "interest", "excite", "about yourself", "cover", "tell us")):
-        return "Passionate Full Stack Software Engineer with 3.5 years of experience building scalable microservices with Java 21, Spring Boot, and React."
+    if any(w in q_low for w in ("about yourself", "background", "tell us about", "who are you")):
+        return ("Full Stack Software Engineer with 3.5 years of experience specializing in Java 21, Spring Boot 3 microservices, "
+                "React 19, and cloud-native deployments on AWS. I have architected high-throughput platforms, optimized database throughput "
+                "by 40%, and led technical deliverables from architecture through production. I am an immediate joiner with a 7-day notice period.")
+
+    if any(w in q_low for w in ("why", "interest", "excite", "why do you want", "why us")):
+        return ("I am excited about the opportunity to contribute to high-impact systems where resilience, high throughput, and clean architecture "
+                "are paramount. My background in building distributed microservices with Java 21, Spring Boot 3, and React 19 aligns closely with "
+                "engineering scalable platforms, and I look forward to bringing that same focus to your team's upcoming initiatives.")
 
     if any(w in q_low for w in ("project", "achievement", "accomplishment", "challenge", "built", "proud of", "technical problem", "system design")):
-        return "Architected and built scalable microservices with Java 21, Spring Boot, and PostgreSQL, optimizing database throughput and latency by 40%."
+        return ("In a recent health data platform (Medplat), our backend faced database connection pool exhaustion under high concurrent query spikes. "
+                "I refactored our connection management using HikariCP, tuned PostgreSQL queries with targeted composite indexing, and decoupled intensive data sync "
+                "routines using asynchronous event processing. This eliminated connection timeouts and reduced query latency by 40% across millions of records.")
 
     # Binary affirmative confirmation
     if any(w in q_low for w in ("confirm", "agree", "certify", "authorized", "acknowledge")):

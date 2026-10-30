@@ -649,6 +649,36 @@ def solve_workday_application(page, job_info, config, dry_run=False, review_mode
 
     human_delay(2.0, 3.5)
 
+    # Extract actual job title and company from Workday job overview
+    if title in ("Software Role", "Direct Workday Application", "Role"):
+        try:
+            t_el = page.locator("h2[data-automation-id='jobPostingHeader'], h1, [data-automation-id='jobPostingTitle']").first
+            if t_el.count() > 0:
+                title = t_el.inner_text().strip()
+        except Exception:
+            pass
+    if company in ("Tech Company", "Company"):
+        try:
+            m_co = re.search(r'https?://([^.]+)\.(?:wd\d+\.)?myworkdayjobs\.com', url)
+            if m_co:
+                company = m_co.group(1).replace('-', ' ').title()
+        except Exception:
+            pass
+
+    jd_text = ""
+    try:
+        desc_el = page.locator("div[data-automation-id='jobPostingDescription'], #jobPostingDescription").first
+        if desc_el.count() > 0:
+            jd_text = desc_el.inner_text()[:4000]
+    except Exception:
+        pass
+
+    # Generate company-tailored 1-page ATS resume via ATS Bridge
+    import ats_bridge
+    resume_pdf_path = ats_bridge.resolve_tailored_resume_for_ats(
+        config, company=company, job_title=title, jd_text=jd_text
+    )
+
     # Click initial Apply button if on job description overview
     apply_btn = page.locator("div[role='button']:has-text('Apply'), a[data-automation-id='adventureButton'], a[data-automation-id='applyManually'], button:has-text('Apply'), a:has-text('Apply')").first
     if apply_btn.count() > 0 and apply_btn.is_visible(timeout=2000):
@@ -666,9 +696,6 @@ def solve_workday_application(page, job_info, config, dry_run=False, review_mode
     # Handle Candidate Authentication / Account Creation
     handle_workday_auth(page, config)
     human_delay(2.5, 4.0)
-
-    # Ensure Master Resume PDF is fresh
-    resume_pdf_path = naukri_agent.ensure_master_resume_pdf(config)
 
     # Multi-step wizard loop
     max_steps = 10

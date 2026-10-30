@@ -95,7 +95,7 @@ def load_qa_memory() -> Dict[str, Any]:
             "live within": "Yes",
             "how did you hear": "LinkedIn",
             "where did you hear": "LinkedIn",
-            "why do you want to join": "The product",
+            "why do you want to join": "I am excited about the opportunity to contribute to high-impact systems where resilience, high throughput, and clean architecture are paramount. My background in building distributed microservices with Java 21, Spring Boot 3, and React 19 aligns closely with engineering scalable platforms, and I look forward to bringing that same focus to your team's upcoming initiatives.",
             "what excites you": "Building high-performance distributed systems with modern tech stacks.",
             "accommodations": "None",
             "pronoun": "He/Him/His",

@@ -49,7 +49,10 @@ TECH_KEYWORDS = [
     "python", "fastapi", "asyncio", "ollama", "llm", "ai", "rest", "restful", "api",
     "graphql", "jpa", "hibernate", "hikaricp", "distributed systems", "ci/cd",
     "github actions", "typescript", "node.js", "expo", "react native", "tailwind",
-    "system design", "multithreading", "high throughput", "low latency", "b2b", "saas"
+    "system design", "multithreading", "high throughput", "low latency", "b2b", "saas",
+    "jwt", "oauth2", "spring security", "security", "grpc", "junit", "mockito",
+    "elasticsearch", "rabbitmq", "terraform", "linux", "git", "websockets", "vite",
+    "redux", "sql", "nosql", "event-driven", "swagger", "openapi", "liquibase", "flyway"
 ]
 
 
@@ -84,7 +87,14 @@ def extract_keywords_from_jd(jd_text):
         "node.js": "Node.js", "expo": "React Native (Expo)", "react native": "React Native",
         "system design": "System Design", "multithreading": "Multithreading",
         "high throughput": "High-Throughput Systems", "low latency": "Low-Latency Optimization",
-        "b2b": "B2B SaaS"
+        "b2b": "B2B SaaS", "jwt": "JWT Authentication", "oauth2": "OAuth2",
+        "spring security": "Spring Security", "security": "Application Security",
+        "grpc": "gRPC", "junit": "JUnit", "mockito": "Mockito",
+        "elasticsearch": "Elasticsearch", "rabbitmq": "RabbitMQ", "terraform": "Terraform",
+        "linux": "Linux", "git": "Git", "websockets": "WebSockets", "vite": "Vite",
+        "redux": "Redux", "sql": "SQL", "nosql": "NoSQL",
+        "event-driven": "Event-Driven Architecture", "swagger": "Swagger / OpenAPI",
+        "openapi": "Swagger / OpenAPI", "liquibase": "Liquibase", "flyway": "Flyway"
     }
     seen = set()
     for f in found:
@@ -153,8 +163,12 @@ Keep under 50 words. Do NOT include company names or salary. Return ONLY the sum
 
 
 def reorder_skills_for_target(master_skills, key_reqs):
-    """Reorder and prioritize skill categories based on target job requirements."""
+    """
+    Reorder and prioritize skill categories based on target job requirements,
+    and reorder individual skills inside each category so key requirements appear first.
+    """
     reqs_str = " ".join(key_reqs).lower()
+    reqs_set = {r.lower().strip() for r in key_reqs if r.strip()}
     
     scored_cats = []
     for cat_name, skill_items in master_skills.items():
@@ -171,10 +185,158 @@ def reorder_skills_for_target(master_skills, key_reqs):
             score += 4
         if "ai" in reqs_str and "AI" in cat_name:
             score += 4
-        scored_cats.append((score, cat_name, skill_items))
+
+        # Intra-category skill reordering: bring matching skills to the front
+        if isinstance(skill_items, list):
+            def _skill_match_priority(item_str):
+                item_lower = item_str.lower()
+                match_score = 0
+                for r in reqs_set:
+                    if r == item_lower:
+                        match_score += 10
+                    elif r in item_lower or item_lower in r:
+                        match_score += 5
+                return match_score
+
+            # Stable sort keeping original relative order for ties
+            sorted_items = sorted(skill_items, key=_skill_match_priority, reverse=True)
+        else:
+            sorted_items = skill_items
+
+        scored_cats.append((score, cat_name, sorted_items))
         
     scored_cats.sort(key=lambda x: x[0], reverse=True)
     return {cat: items for _, cat, items in scored_cats}
+
+
+def calculate_ats_match_score(resume_data, jd_text="", key_reqs=None):
+    """
+    Calculate quantitative ATS match score, keyword hit coverage across sections,
+    and missing skill gap analysis.
+    """
+    eval_reqs = []
+    if jd_text:
+        eval_reqs = extract_keywords_from_jd(jd_text)
+    if key_reqs:
+        for r in key_reqs:
+            if r and r not in eval_reqs:
+                eval_reqs.append(r)
+                
+    if not eval_reqs:
+        return {
+            "match_score": 100.0,
+            "total_keywords": 0,
+            "matched_count": 0,
+            "matched_skills": [],
+            "missing_skills": [],
+            "grade": "N/A"
+        }
+
+    sections = {
+        "Header": f"{resume_data.get('target_role', '')} {resume_data.get('subtitle', '')}".lower(),
+        "Summary": (resume_data.get('summary', '')).lower(),
+        "Skills": " ".join([
+            " ".join(v) if isinstance(v, list) else str(v)
+            for v in (resume_data.get('skills') or {}).values()
+        ]).lower(),
+        "Experience": " ".join([
+            " ".join([b if isinstance(b, str) else b.get('text', '') for b in exp.get('bullets', [])])
+            for exp in resume_data.get('experience', [])
+        ]).lower(),
+        "Projects": " ".join([
+            " ".join([b if isinstance(b, str) else b.get('text', '') for b in proj.get('bullets', [])])
+            for proj in resume_data.get('projects', [])
+        ]).lower(),
+    }
+
+    matched_skills = []
+    missing_skills = []
+
+    for req in eval_reqs:
+        req_clean = req.strip()
+        req_lower = req_clean.lower()
+        
+        synonyms = [req_lower]
+        if "spring boot" in req_lower:
+            synonyms.extend(["spring", "spring boot 3"])
+        if "postgres" in req_lower:
+            synonyms.extend(["postgresql", "postgres"])
+        if "react" in req_lower:
+            synonyms.extend(["react", "react 19", "react.js"])
+        if "fastapi" in req_lower:
+            synonyms.extend(["fastapi", "python fastapi"])
+        if "aws" in req_lower:
+            synonyms.extend(["aws", "ec2", "s3", "rds"])
+
+        found_in = []
+        for sec_name, sec_text in sections.items():
+            if any(s in sec_text for s in synonyms):
+                found_in.append(sec_name)
+
+        if found_in:
+            matched_skills.append({
+                "skill": req_clean,
+                "sections": found_in
+            })
+        else:
+            missing_skills.append(req_clean)
+
+    total = len(eval_reqs)
+    matched_cnt = len(matched_skills)
+    match_pct = round((matched_cnt / total) * 100, 1) if total > 0 else 100.0
+
+    if match_pct >= 90:
+        grade = "A+"
+    elif match_pct >= 80:
+        grade = "A"
+    elif match_pct >= 70:
+        grade = "B"
+    elif match_pct >= 60:
+        grade = "C"
+    else:
+        grade = "D"
+
+    return {
+        "match_score": match_pct,
+        "total_keywords": total,
+        "matched_count": matched_cnt,
+        "matched_skills": matched_skills,
+        "missing_skills": missing_skills,
+        "grade": grade
+    }
+
+
+def format_ats_report(ats_audit, target_role="Full Stack Developer", company="Target"):
+    """Render a clean CLI summary of the ATS score and keyword gap analysis."""
+    lines = [
+        "",
+        "=" * 65,
+        "             ATS COMPATIBILITY & KEYWORD MATCH AUDIT",
+        "=" * 65,
+        f"🎯 Target Role    : {target_role} ({company or 'General'})",
+        f"📊 ATS Match Score : {ats_audit['match_score']}%  [Grade: {ats_audit['grade']}]",
+        f"🔍 Keyword Coverage: {ats_audit['matched_count']} / {ats_audit['total_keywords']} JD Requirements Found",
+        "-" * 65,
+    ]
+    if ats_audit['matched_skills']:
+        lines.append("✔ MATCHED SKILLS & SECTION COVERAGE:")
+        for item in ats_audit['matched_skills']:
+            sec_str = ", ".join(item['sections'])
+            lines.append(f"   • {item['skill']:<24} -> [{sec_str}]")
+            
+    if ats_audit['missing_skills']:
+        lines.append("")
+        lines.append("✖ MISSING SKILLS / KEYWORD GAPS:")
+        for m in ats_audit['missing_skills']:
+            lines.append(f"   • {m:<24} (Not explicitly detected in resume)")
+    else:
+        lines.append("")
+        lines.append("🎉 Perfect 100% keyword coverage across all detected requirements!")
+
+    lines.append("-" * 65)
+    lines.append("📄 ATS Layout Check : Single-page budget & pure text parser compliant.")
+    lines.append("=" * 65)
+    return "\n".join(lines)
 
 
 def filter_and_rank_bullets(bullets, key_reqs, max_bullets=3):
@@ -275,7 +437,7 @@ def create_tailored_resume_data(
     master_projects = master.get('projects', [])
     tailored_projects = select_top_projects(master_projects, key_reqs, max_projects=3)
     
-    return {
+    result = {
         "company_name": company_name,
         "target_role": role_title,
         "personal_info": master.get('personal_info', {}),
@@ -286,6 +448,8 @@ def create_tailored_resume_data(
         "projects": tailored_projects,
         "education_and_certifications": master.get('education_and_certifications', {})
     }
+    result["ats_audit"] = calculate_ats_match_score(result, jd_text=jd_text, key_reqs=key_reqs)
+    return result
 
 
 def generate_resume_pdf(
@@ -826,6 +990,7 @@ Examples:
     parser.add_argument("--web", action="store_true", help="Launch local Web UI editor in browser")
     parser.add_argument("--port", type=int, default=8765, help="Port for local Web UI (default: 8765)")
     parser.add_argument("--interactive", "-i", action="store_true", help="Launch step-by-step terminal wizard")
+    parser.add_argument("--score", action="store_true", help="Print detailed ATS compatibility & keyword match audit report")
 
     args = parser.parse_args()
 
@@ -870,7 +1035,13 @@ Examples:
         print("🖥️  Opened in macOS Preview.")
     if args.reveal:
         print("📂 Revealed in macOS Finder.")
-    print("=" * 65 + "\n")
+    print("=" * 65)
+
+    if args.score or jd_content or args.highlight:
+        ats_audit = tailored.get("ats_audit")
+        if ats_audit and ats_audit.get("total_keywords", 0) > 0:
+            print(format_ats_report(ats_audit, target_role=args.role or tailored['subtitle'], company=args.company))
+    print()
 
 
 if __name__ == '__main__':

@@ -647,6 +647,50 @@ class UnifiedNotifier:
             logging.error(f"[Notifier] Error sending CRM report: {e}")
         return False
 
+    def send_bottleneck_report(self):
+        """Send live platform bottleneck diagnostic and overcoming guide."""
+        try:
+            import system_diagnostics
+            text = system_diagnostics.format_telegram_diagnostic_briefing()
+            print("\n" + "=" * 60)
+            print(text)
+            print("=" * 60 + "\n")
+            if self.tg.is_configured():
+                return self.tg.send_message(text)
+        except Exception as e:
+            logging.error(f"[Notifier] Error sending bottleneck report: {e}")
+        return False
+
+    def send_weekly_status_report(self):
+        """Send 7-day comparative weekly status and platform performance audit."""
+        try:
+            import system_diagnostics
+            diag = system_diagnostics.get_live_diagnostics()
+            m = diag["metrics"]
+            lines = [
+                f"📊 *JOB AUTOMATION 7-DAY WEEKLY AUDIT*",
+                f"🗓️ `{diag['this_week_dates'][-1]} to {diag['this_week_dates'][0]}`\n",
+                f"🚀 *Dispatched This Week:* `{m['this_week_total']} Applications`",
+                f"📈 *Previous Week Total:* `{m['prev_week_total']} Applications` ({m['week_change_pct']:+}%)",
+                f"⚡ *Daily Run-Rate:* `{m['daily_average_this_week']} Apps/Day` (vs {m['daily_average_prev_week']} Apps/Day)\n",
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                f"*Weekly Volume by Platform:*"
+            ]
+            for p in diag["platforms"]:
+                sym = "🟢" if p["status_color"] == "emerald" else ("🟣" if p["status_color"] == "indigo" else ("🟡" if p["status_color"] == "amber" else ("🔴" if p["status_color"] == "rose" else "⚪")))
+                lines.append(f"• {sym} *{p['name']}:* `{p['this_week_total']}` apps ({p['week_change_pct']:+}%)")
+            lines.append("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append(f"💡 _Tip: Run `python3 run_all.py --weekly-status` for full daily breakdown matrix!_")
+            msg = "\n".join(lines)
+            print("\n" + "=" * 60)
+            print(msg)
+            print("=" * 60 + "\n")
+            if self.tg.is_configured():
+                return self.tg.send_message(msg)
+        except Exception as e:
+            logging.error(f"[Notifier] Error sending weekly report: {e}")
+        return False
+
 
 # Global singleton instance for easy import
 _global_notifier = None
@@ -697,6 +741,16 @@ def send_tasks_report():
 def send_crm_report():
     """Convenience function to trigger recruiter CRM report."""
     return get_notifier().send_crm_report()
+
+
+def send_bottleneck_report():
+    """Convenience function to trigger live bottleneck & overcoming report."""
+    return get_notifier().send_bottleneck_report()
+
+
+def send_weekly_status_report():
+    """Convenience function to trigger weekly comparative status audit."""
+    return get_notifier().send_weekly_status_report()
 
 
 # ---------------------------------------------------------------------------
@@ -921,6 +975,14 @@ def run_telegram_bot_listener():
                     elif text.lower() in ("/keywords", "/keyword", "keywords"):
                         get_notifier().send_keyword_report()
 
+                    elif text.lower() in ("/health", "/bottlenecks", "/issues", "health", "bottlenecks"):
+                        tg.send_message("🔍 _Compiling live platform bottleneck diagnostics & overcoming guide..._")
+                        get_notifier().send_bottleneck_report()
+
+                    elif text.lower() in ("/weekly", "/weeklystatus", "weekly"):
+                        tg.send_message("📊 _Generating 7-day comparative weekly status audit..._")
+                        get_notifier().send_weekly_status_report()
+
                     elif text.lower() in ("/tasks", "/task", "tasks", "task"):
                         get_notifier().send_tasks_report()
 
@@ -993,6 +1055,8 @@ def run_telegram_bot_listener():
                             "• `/tasks` - Pending recruiter tasks, interviews & action items\n"
                             "• `/pipeline` - Recruiter CRM relationship stages & responses\n"
                             "• `/inbound` - Trigger on-demand recruiter email sweep & link apply\n"
+                            "• `/health` - Live platform bottleneck diagnostics & overcoming guide\n"
+                            "• `/weekly` - 7-day comparative weekly status & platform audit\n"
                             "• `/quota` - Live visual progress bars & remaining daily balance\n"
                             "• `/status` - Today's applications summary & keyword yields\n"
                             "• `/keywords` - Today's keyword performance & yield stats\n"
@@ -1018,6 +1082,10 @@ if __name__ == "__main__":
         run_telegram_bot_listener()
     elif len(sys.argv) > 1 and sys.argv[1] == "--digest":
         send_daily_digest()
+    elif len(sys.argv) > 1 and sys.argv[1] in ("--health", "--bottlenecks"):
+        send_bottleneck_report()
+    elif len(sys.argv) > 1 and sys.argv[1] in ("--weekly", "--weekly-status"):
+        send_weekly_status_report()
     elif len(sys.argv) > 1 and sys.argv[1] == "--quota":
         send_quota_report()
     elif len(sys.argv) > 1 and sys.argv[1] == "--keywords":
