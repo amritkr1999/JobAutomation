@@ -910,10 +910,12 @@ def collect_job_cards_on_page(page):
     return jobs
 
 
-def build_naukri_search_url(query, exp_years=3, freshness_days=7):
+def build_naukri_search_url(query, exp_years=3, freshness_days=7, page_num=1):
     """Build a clean Naukri search URL for a given role query."""
     slug = re.sub(r'[^a-z0-9]+', '-', query.lower()).strip('-')
     q_encoded = quote_plus(query)
+    if page_num > 1:
+        return f"https://www.naukri.com/{slug}-jobs-{page_num}?k={q_encoded}&experience={exp_years}&jobAge={freshness_days}"
     return f"https://www.naukri.com/{slug}-jobs?k={q_encoded}&experience={exp_years}&jobAge={freshness_days}"
 
 
@@ -964,23 +966,30 @@ def run_naukri_auto_apply(context, page, config, ledger, logs_dir, max_applies_o
     queries = search_cfg.get("queries", ["Java Full Stack Developer"])
     exp_years = int(search_cfg.get("experience_years", 3))
     freshness = int(search_cfg.get("freshness_days", 7))
+    max_pages = int(search_cfg.get("max_pages_per_query", 2))
 
     for query in queries:
-        search_url = build_naukri_search_url(query, exp_years=exp_years, freshness_days=freshness)
-        logging.info(f"[Naukri] Searching query: '{query}' -> {search_url}")
-        try:
-            page.goto(search_url, wait_until="domcontentloaded", timeout=45000)
-            human_delay(3.0, 4.5)
-            dismiss_naukri_popups(page)
-            found = collect_job_cards_on_page(page)
-            logging.info(f"[Naukri] Found {len(found)} job card(s) for '{query}'.")
-            for jb in found:
-                jid = jb["job_id"]
-                if jid and jid not in seen_ids:
-                    seen_ids.add(jid)
-                    candidate_jobs.append(jb)
-        except Exception as e:
-            logging.warning(f"[Naukri] Search query '{query}' warning: {e}")
+        for p in range(1, max_pages + 1):
+            search_url = build_naukri_search_url(query, exp_years=exp_years, freshness_days=freshness, page_num=p)
+            logging.info(f"[Naukri] Searching query: '{query}' (page {p}) -> {search_url}")
+            try:
+                page.goto(search_url, wait_until="domcontentloaded", timeout=45000)
+                human_delay(2.5, 3.5)
+                dismiss_naukri_popups(page)
+                found = collect_job_cards_on_page(page)
+                logging.info(f"[Naukri] Found {len(found)} job card(s) for '{query}' (page {p}).")
+                new_in_page = 0
+                for jb in found:
+                    jid = jb["job_id"]
+                    if jid and jid not in seen_ids:
+                        seen_ids.add(jid)
+                        candidate_jobs.append(jb)
+                        new_in_page += 1
+                if not found or new_in_page == 0:
+                    break
+            except Exception as e:
+                logging.warning(f"[Naukri] Search query '{query}' (page {p}) warning: {e}")
+                break
 
     logging.info(f"[Naukri] Total unique job listings collected this run: {len(candidate_jobs)}")
 
@@ -1056,6 +1065,23 @@ def run_naukri_auto_apply(context, page, config, ledger, logs_dir, max_applies_o
             hr_emails = []
             if jd_text:
                 hr_emails = bridge_hr_emails_to_dropzone(jd_text, title, company, jid, config)
+
+            # Universally harvest Job Poster & queue Employee Referral Hunt
+            rec_name, rec_title = "", ""
+            try:
+                import intent_miner
+                br_res = intent_miner.bridge_job_poster_and_referral(
+                    page=job_page,
+                    company=company,
+                    role=title,
+                    platform_name="naukri",
+                    logs_dir=logs_dir
+                )
+                if br_res.get("job_poster"):
+                    rec_name = br_res["job_poster"].get("recruiter_hint", "")
+                    rec_title = br_res["job_poster"].get("recruiter_title", "")
+            except Exception as ex:
+                logging.debug(f"[Naukri] Poster/referral bridge note: {ex}")
 
             # Check if already applied on Naukri
             if job_page.locator("#already-applied, span:has-text('Already Applied')").first.count() > 0:

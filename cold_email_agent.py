@@ -114,7 +114,8 @@ def extract_emails_from_text(text):
             'memermott.com': 'mcmermott.com',
             'nhe.sa': 'nhc.sa',
             'drsulaimanathabib.com': 'drsulaimanalhabib.com',
-            'ramelinics.com': 'ramclinics.com'
+            'ramelinics.com': 'ramclinics.com',
+            'hdfebank.com': 'hdfcbank.com'
         }
         for bad_d, good_d in domain_corrections.items():
             if healed.lower().endswith('@' + bad_d):
@@ -256,6 +257,32 @@ def infer_company_from_domain(email_address, context_text=""):
     return formatted.strip()
 
 
+NON_PERSON_NAME_TOKENS = {
+    'areers', 'areer', 'career', 'careers', 'job', 'jobs', 'obs', 'ob',
+    'hr', 'talent', 'alent', 'hiring', 'recruit', 'recruiter', 'recruiting',
+    'recruitment', 'team', 'admin', 'apply', 'applicant', 'contact', 'info',
+    'support', 'cv', 'resume', 'resumes', 'staffing', 'enquiry', 'inquiry',
+    'office', 'global', 'deloitte', 'india', 'tech', 'work', 'corporate',
+    'indiajobs', 'babajob', 'dotnetcareer', 'itrecruiter', 'itjobs', 'prjobs',
+    'hirebloom', 'wadaef', 'marketing', 'talentconnect', 'solutions', 'services',
+    'group', 'holding', 'helpdesk', 'inbox', 'sales', 'billing', 'accounts'
+}
+
+
+def is_valid_human_name(name_str):
+    """Check if an extracted string token represents a credible human name rather than a role, department, or OCR artifact."""
+    if not name_str or not name_str.isalpha():
+        return False
+    name_low = name_str.lower()
+    if len(name_low) < 3 or len(name_low) > 16:
+        return False
+    if name_low in getattr(email_agent, 'GENERIC_ROLE_MAILBOXES', set()) or name_low in NON_PERSON_NAME_TOKENS:
+        return False
+    if any(role_word in name_low for role_word in ('career', 'areer', 'recruit', 'talent', 'hiring', 'staffing', 'jobs')):
+        return False
+    return True
+
+
 def extract_cold_recruiter_name(email_address):
     """Extract a human recruiter name from email local-part if personal, or return empty for generic roles."""
     if not email_address or '@' not in email_address:
@@ -269,10 +296,12 @@ def extract_cold_recruiter_name(email_address):
     
     # If it is a generic role mailbox, do not guess a name
     if (
-        local_part in email_agent.GENERIC_ROLE_MAILBOXES
+        local_part in getattr(email_agent, 'GENERIC_ROLE_MAILBOXES', set())
+        or local_part in NON_PERSON_NAME_TOKENS
         or any(local_part.startswith(g) for g in (
             'cv', 'recruitment', 'recruit', 'hr', 'careers', 'career', 'job', 'jobs',
-            'wadaef', 'talent', 'info', 'marketing', 'support', 'admin', 'contact'
+            'wadaef', 'talent', 'info', 'marketing', 'support', 'admin', 'contact',
+            'areers', 'areer', 'obs', 'alent'
         ))
     ):
         # Check if it has a period or separator after generic prefix (e.g. "recruitment.amjad" -> "Amjad")
@@ -281,7 +310,7 @@ def extract_cold_recruiter_name(email_address):
                 parts = local_part.split(sep)
                 for p in parts[1:]:
                     p_clean = re.sub(r'\d+$', '', p)
-                    if p_clean.isalpha() and 2 < len(p_clean) <= 14 and p_clean not in email_agent.GENERIC_ROLE_MAILBOXES:
+                    if is_valid_human_name(p_clean):
                         return p_clean.capitalize()
         return ""
         
@@ -291,12 +320,12 @@ def extract_cold_recruiter_name(email_address):
             tokens = local_part.split(sep)
             for t in tokens:
                 t_clean = re.sub(r'\d+$', '', t)
-                if t_clean.isalpha() and 2 < len(t_clean) <= 14 and t_clean not in email_agent.GENERIC_ROLE_MAILBOXES:
+                if is_valid_human_name(t_clean):
                     return t_clean.capitalize()
                     
     # Single word personal local-part (e.g. "amjad@...")
     single = re.sub(r'\d+$', '', local_part)
-    if single.isalpha() and 2 < len(single) <= 14 and single not in email_agent.GENERIC_ROLE_MAILBOXES:
+    if is_valid_human_name(single):
         return single.capitalize()
         
     return ""
@@ -307,10 +336,38 @@ def extract_cold_recruiter_name(email_address):
 # -----------------------------------------------------------------------------
 
 def compose_cold_subject(company_name, profile, variant_id="variant_a"):
-    """Compose a high-converting, professional cold outreach email subject line."""
+    """
+    Compose a high-converting, professional cold outreach email subject line.
+    Integrates dynamic strategies harvested from career reels and expert advice.
+    """
     sender_name = profile.get('full_name', 'Amrit Kumar')
     notice = profile.get('notice_period', '7 Days')
-    
+    tech_stack = profile.get('tech_stack', 'Java 21, Spring Boot 3, React 19')
+
+    # 1. Check for dynamic strategies learned from Instagram career reels
+    reel_strat_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'reel_strategies', 'cold_email_strategies.json')
+    if os.path.exists(reel_strat_file):
+        try:
+            with open(reel_strat_file, 'r', encoding='utf-8') as f:
+                r_strat = json.load(f)
+            templates = r_strat.get("subject_line_templates", [])
+            if templates and (variant_id.startswith("reel_") or random.random() < 0.35):
+                tpl = random.choice(templates)
+                # Safely format placeholders
+                res = tpl.replace("{company_name}", company_name or "your team")
+                res = res.replace("{sender_name}", sender_name)
+                res = res.replace("{notice}", notice)
+                res = res.replace("{tech_stack}", tech_stack)
+                res = res.replace("{role}", "Full Stack / Backend Engineer")
+                res = res.replace("{job_title}", "Full Stack / Backend Engineer")
+                res = res.replace("{name}", "Hiring Team")
+                # Strip any unresolved placeholders
+                res = re.sub(r'\{[a-zA-Z_]+\}', '', res).strip()
+                if res.strip():
+                    return res.strip()
+        except Exception:
+            pass
+
     if variant_id == "variant_b" and company_name:
         return f"Exploring Engineering Opportunities at {company_name} — {sender_name} (3+ YOE)"
     elif variant_id == "variant_c":
@@ -323,6 +380,7 @@ def compose_cold_email_body(company_name, recruiter_name, profile, variant_id="v
     """
     Compose an impactful, polite speculative cold outreach pitch.
     Frames outreach around high-demand engineering value without assuming an active job post.
+    Incorporates dynamic value pitch hooks and low-friction CTAs learned from reels.
     """
     if recruiter_name:
         greeting = f"Hi {recruiter_name},"
@@ -338,6 +396,29 @@ def compose_cold_email_body(company_name, recruiter_name, profile, variant_id="v
     linkedin = profile.get('linkedin', 'https://linkedin.com/in/AmritKumar')
     github = profile.get('github', 'https://github.com/amritkr1999')
     target_target = f"{company_name}'s engineering team" if company_name else "your engineering team"
+
+    # Check for reel CTA advice
+    custom_cta = "Would you be open to a brief 5-minute introductory call this week?"
+    reel_strat_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'reel_strategies', 'cold_email_strategies.json')
+    if os.path.exists(reel_strat_file):
+        try:
+            with open(reel_strat_file, 'r', encoding='utf-8') as f:
+                r_strat = json.load(f)
+            ctas = r_strat.get("call_to_actions", [])
+            if ctas:
+                custom_cta = random.choice(ctas)
+        except Exception:
+            pass
+
+    # Safely interpolate all possible CTA placeholders
+    custom_cta = custom_cta.replace("{company_name}", company_name or "your team")
+    custom_cta = custom_cta.replace("{sender_name}", full_name)
+    custom_cta = custom_cta.replace("{notice}", notice)
+    custom_cta = custom_cta.replace("{tech_stack}", profile.get('tech_stack', 'Java 21, Spring Boot 3, React 19'))
+    custom_cta = custom_cta.replace("{recipient_name}", recruiter_name or "Hiring Team")
+    custom_cta = custom_cta.replace("{name}", recruiter_name or "Hiring Team")
+    custom_cta = custom_cta.replace("{job_title}", "Full Stack / Backend Developer")
+    custom_cta = re.sub(r'\{[a-zA-Z_]+\}', '', custom_cta).strip()
     
     if variant_id == "variant_b":
         body = f"""{greeting}
@@ -349,7 +430,7 @@ Over the past 3.5 years as a Full Stack Developer at Ishavx Technology and Argus
 • Engineering Impact: Reduced API response times by 35% and database query latency by 40% across high-volume production datasets.
 • Availability: Immediate Joiner ({notice} Notice Period).
 
-Whether you have active openings or upcoming engineering initiatives, I would welcome the chance to connect for a brief introductory call.
+{custom_cta}
 
 Please find my master resume attached for your review. Thank you for your time and consideration.
 
@@ -371,6 +452,8 @@ With 3+ years of hands-on experience delivering enterprise-grade platforms, here
 • Measurable Delivery: Designed low-latency RESTful APIs, optimized complex relational queries, and deployed robust containerized microservices.
 • Availability: Immediate Joiner ({notice} Notice Period).
 
+{custom_cta}
+
 I have attached my comprehensive resume for your consideration. I would greatly appreciate the opportunity to discuss how my technical expertise aligns with your team's goals.
 
 Thank you for your time, and I look forward to hearing from you.
@@ -384,6 +467,9 @@ Email: {email_addr}
 LinkedIn: {linkedin}
 GitHub: {github}"""
         
+    # Final safety sweep for any unrendered placeholders (e.g. {company_name}, {job_title}, etc.)
+    body = body.replace("{company_name}", company_name or "your team")
+    body = re.sub(r'\{[a-zA-Z_]+\}', lambda m: company_name if m.group(0) == '{company_name}' else '', body)
     return body
 
 
@@ -578,9 +664,11 @@ def dispatch_cold_email_queue(limit=None, dry_run=False, force=False, config=Non
     remaining_queue = []
     
     for item in queue:
-        email_addr = item.get('email', '').strip()
+        email_addr = email_agent.heal_ocr_email_typos(item.get('email', '').strip())
         company = item.get('company', '').strip()
         recruiter = item.get('recruiter_name', '').strip()
+        if recruiter and not is_valid_human_name(recruiter):
+            recruiter = ""
         
         if dispatched >= remaining_quota and not force:
             remaining_queue.append(item)

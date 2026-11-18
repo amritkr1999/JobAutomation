@@ -73,8 +73,21 @@ The engine coordinates multiple independent platform workers via a unified orche
 - **7-Day Rolling Growth Audit**: Compares week-over-week application volume (+128% growth tracking) and provides a daily breakdown matrix.
 - **Autonomous Roadblock Diagnostics**: Identifies exact runtime obstacles (e.g. stepper form halts, feed exhaustion, query limits) and outputs step-by-step overcoming strategies.
 
-### 🎯 Dynamic ATS Resume & Cover Letter Engine
-- Generates **custom, ATS-optimized 1-page executive resumes** tailored specifically to each target Job Description.
+### 🎯 Dynamic ATS Resume & Multi-Role Career Targeting Engine
+- Generates **custom, ATS-optimized 1-page executive resumes** tailored specifically to each target Job Description on the fly.
+- **5 Specialized Career Tracks Supported Out-of-the-Box**:
+  1. **Full Stack / Backend Software Engineer**: Java 21, Spring Boot 3, Microservices, Python FastAPI, React 19, PostgreSQL, AWS.
+  2. **Forward Deployed Engineer (FDE / Solutions Engineer)**: Enterprise integrations, rapid prototyping (POC/MVP), client architecture, data pipelines, AWS deployments.
+  3. **Technical Project Manager (TPM / Scrum Master)**: Agile/Scrum sprint delivery, Jira/Linear governance, critical path dependency tracking, cross-functional engineering alignment.
+  4. **Data Analyst**: Relational data modeling, SQL query optimization (40-65% speedups), Power BI, automated ETL pipelines.
+  5. **Data Scientist / Applied ML**: Applied ML pipelines, NLP/embeddings, OCR document extraction, and model evaluation.
+- **Dynamic 1-Page Layout Budgeting**: ReportLab vector PDF compiler with auto-compaction algorithms that adaptively compress margins and typography, guaranteeing the resume never spills onto an awkward second page.
+- **Adaptive Subtitles & Keyword Ranking**: Automatically formats role-aligned headlines (e.g. `Forward Deployed Engineer | Python • Java • PostgreSQL • AWS • API Integrations`) and bubbles up JD-demanded keywords to the top of experience bullets.
+- **Curated Standalone Resume Templates**: Includes production-grade Markdown templates for quick review or direct portal uploads:
+  - [`Amrit_Kumar_Forward_Deployed_Engineer_Resume.md`](file:///Users/amrit/Documents/JobAutomation/Amrit_Kumar_Forward_Deployed_Engineer_Resume.md)
+  - [`Amrit_Kumar_Technical_Project_Manager_Resume.md`](file:///Users/amrit/Documents/JobAutomation/Amrit_Kumar_Technical_Project_Manager_Resume.md)
+  - [`Amrit_Kumar_Data_Analyst_Resume.md`](file:///Users/amrit/Documents/JobAutomation/Amrit_Kumar_Data_Analyst_Resume.md)
+  - [`Amrit_Kumar_Data_Scientist_Resume.md`](file:///Users/amrit/Documents/JobAutomation/Amrit_Kumar_Data_Scientist_Resume.md)
 - Utilizes local LLMs (**Ollama / Llama 3.1**) or cloud APIs to analyze job descriptions, extract recruiter focus areas, and highlight matching competencies.
 - Produces clean vector PDFs via **ReportLab** with clickable hyperlinks, strict typography margins, and zero ATS parsing errors.
 

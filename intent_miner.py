@@ -362,8 +362,18 @@ def ingest_screenshot_knowledge(file_path, config=None, logs_dir=LOGS_DIR):
     return record
 
 
-def register_in_lead_hunt_queue(job_dna, filename, logs_dir=LOGS_DIR):
-    """Register screenshots that lack direct email so LinkedIn agent can hunt for the recruiter/company."""
+def queue_lead_for_hunt(company_name: str, role: str, recruiter_hint: str = "",
+                        recruiter_title: str = "", target_type: str = "JOB_POSTER",
+                        profile_url: str = "", primary_tech: list = None,
+                        source: str = "manual", notes: str = "",
+                        logs_dir: str = LOGS_DIR) -> dict:
+    """
+    Queue a high-intent lead for LinkedIn hunt & outreach.
+    Supports:
+      - 'JOB_POSTER': Scraped from job posts across portals (hunt the recruiter/HR directly)
+      - 'REFERRAL_HUNT': Triggered whenever any company is hiring or by referral policy (hunt engineers for referral)
+      - 'SCREENSHOT_HUNT': Extracted from dropzone screenshot with no email
+    """
     queue_path = os.path.join(logs_dir, 'lead_hunt_queue.json')
     queue = load_json_safe(queue_path, {
         "total_targets": 0,
@@ -371,25 +381,38 @@ def register_in_lead_hunt_queue(job_dna, filename, logs_dir=LOGS_DIR):
         "targets": []
     })
 
-    company = job_dna.get('company_name', '').strip()
-    role = job_dna.get('job_title', '').strip() or job_dna.get('normalized_role', '')
-    recruiter = job_dna.get('recruiter_name', '').strip()
+    company = (company_name or "").strip()
+    role = (role or "").strip()
+    recruiter = (recruiter_hint or "").strip()
+    p_url = (profile_url or "").strip()
 
-    if not company and not role:
-        return
+    if not company and not role and not recruiter and not p_url:
+        return {}
 
     # Deduplicate against existing hunt targets
     for existing in queue.get('targets', []):
-        if existing.get('company_name', '').lower() == company.lower() and existing.get('role', '').lower() == role.lower():
-            return
+        same_co = existing.get('company_name', '').lower() == company.lower() if company else True
+        same_role = existing.get('role', '').lower() == role.lower() if role else True
+        same_rec = existing.get('recruiter_hint', '').lower() == recruiter.lower() if recruiter else True
+        same_type = existing.get('target_type', 'JOB_POSTER') == target_type
+        if same_co and same_role and same_rec and same_type:
+            # If we now have a direct profile URL and existing doesn't, update it
+            if p_url and not existing.get('profile_url'):
+                existing['profile_url'] = p_url
+                save_json_safe(queue_path, queue)
+            return existing
 
     target = {
-        "id": f"hunt_{datetime.now().strftime('%Y%m%d%H%M%S')}_{abs(hash(company + role)) % 10000}",
+        "id": f"hunt_{datetime.now().strftime('%Y%m%d%H%M%S')}_{abs(hash(company + role + recruiter + p_url)) % 10000}",
         "company_name": company,
-        "role": role,
+        "role": role or "Software Engineer",
         "recruiter_hint": recruiter,
-        "primary_tech": job_dna.get('primary_tech_stack', []),
-        "source_screenshot": filename,
+        "recruiter_title": recruiter_title,
+        "profile_url": p_url,
+        "target_type": target_type,
+        "primary_tech": primary_tech or ["Java", "Spring Boot", "React", "Microservices"],
+        "source": source,
+        "notes": notes,
         "status": "PENDING_HUNT",
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
@@ -398,7 +421,149 @@ def register_in_lead_hunt_queue(job_dna, filename, logs_dir=LOGS_DIR):
     queue['total_targets'] = len(queue['targets'])
     queue['last_updated'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     save_json_safe(queue_path, queue)
-    logging.info(f"[IntentMiner] 🎯 Added '{role}' at '{company or '(Unknown Co)'}' to Lead Hunt Queue.")
+    logging.info(
+        f"[LeadHuntQueue] 🎯 Queued {target_type} target: '{recruiter or role}' at '{company}' "
+        f"{'(Direct Profile: ' + p_url + ')' if p_url else ''} (Source: {source})"
+    )
+    return target
+
+
+def extract_job_poster_from_page(page, container=None) -> tuple:
+    """
+    Universally extracts (recruiter_name, recruiter_title, linkedin_profile_url)
+    from any active page or modal across LinkedIn, Instahyre, Naukri, Indeed, Wellfound, Foundit.
+    """
+    if not page:
+        return "", "", ""
+
+    target_scope = container or page
+
+    # 1. LinkedIn-specific hiring team extraction
+    try:
+        li_hirer_locs = target_scope.locator(
+            ".hirer-card__hirer-information, .job-details-jobs-unified-top-card__job-poster-profile-link, "
+            "div.jobs-poster, [data-view-name*='job-poster'], a[data-tracking-control-name*='job_poster']"
+        ).all()
+        for loc in li_hirer_locs:
+            link = loc.locator("a[href*='/in/']").first if loc.locator("a[href*='/in/']").count() > 0 else loc
+            href = link.get_attribute("href") or ""
+            clean_url = href.split("?")[0].rstrip("/") + "/" if "/in/" in href else ""
+            txt = (loc.inner_text(timeout=300) or "").strip()
+            lines = [l.strip() for l in txt.splitlines() if l.strip()]
+            if lines:
+                name = lines[0].split("•")[0].strip()
+                title = lines[1] if len(lines) > 1 else ""
+                if len(name) > 2 and "linkedin" not in name.lower():
+                    return name, title, clean_url
+    except Exception:
+        pass
+
+    # 2. General 'Posted by' / 'Recruiter Details' / 'Hiring team' across all platforms
+    try:
+        xpath_query = (
+            "//*[contains(text(), 'Posted by') or contains(text(), 'Meet the hiring team') "
+            "or contains(text(), 'Recruiter Details') or contains(@class, 'recruiter') "
+            "or contains(@class, 'hiring-team')]"
+        )
+        locs = target_scope.locator(xpath_query).all()
+        for loc in locs:
+            txt = (loc.inner_text(timeout=300) or "").strip()
+            parent_txt = ""
+            try:
+                parent_txt = (loc.locator("xpath=..").inner_text(timeout=300) or "").strip()
+            except Exception:
+                pass
+            combined = parent_txt if len(parent_txt) > len(txt) else txt
+
+            # Check if there is an embedded LinkedIn profile link
+            li_link = loc.locator("a[href*='/in/'], a[href*='linkedin.com']").first
+            profile_url = ""
+            if li_link.count() > 0:
+                h = li_link.get_attribute("href") or ""
+                if "/in/" in h:
+                    profile_url = h.split("?")[0].rstrip("/") + "/"
+
+            match = re.search(r'(?:Posted by|Meet the hiring team|Recruiter Details)[:\s]+([^\n\r,]+)', combined, re.IGNORECASE)
+            if match:
+                r_name = match.group(1).strip()
+                if len(r_name) > 2 and not any(k in r_name.lower() for k in ("instahyre", "naukri", "indeed", "linkedin", "foundit")):
+                    lines = [line.strip() for line in combined.splitlines() if line.strip()]
+                    r_title = ""
+                    for idx_l, line in enumerate(lines):
+                        if any(k in line.lower() for k in ("posted by", "hiring team", "recruiter")) and idx_l + 1 < len(lines):
+                            r_title = lines[idx_l + 1]
+                            break
+                    return r_name, r_title, profile_url
+    except Exception:
+        pass
+
+    return "", "", ""
+
+
+def bridge_job_poster_and_referral(page, company: str, role: str, platform_name: str,
+                                   modal_or_container=None, logs_dir: str = LOGS_DIR) -> dict:
+    """
+    Universal bridge across ALL job platforms:
+      1. Scrapes the Job Poster / Recruiter / Hiring Team and queues a JOB_POSTER lead for LinkedIn.
+      2. Queues a REFERRAL_HUNT lead targeting engineers at the hiring company on LinkedIn.
+    """
+    company = (company or "").strip()
+    role = (role or "").strip()
+    results = {"job_poster": None, "referral_hunt": None}
+
+    if not company or company.lower() in ("company", "unknown company", "confidential", "na", "tech company", "startup"):
+        return results
+
+    # 1. Scrape Job Poster if present on the page/modal
+    rec_name, rec_title, profile_url = extract_job_poster_from_page(page, container=modal_or_container)
+    if rec_name:
+        results["job_poster"] = queue_lead_for_hunt(
+            company_name=company,
+            role=role or "Software Engineer",
+            recruiter_hint=rec_name,
+            recruiter_title=rec_title,
+            target_type="JOB_POSTER",
+            profile_url=profile_url,
+            primary_tech=["Java", "Spring Boot", "Microservices", "React"],
+            source=f"{platform_name}_job_poster",
+            notes=f"Recruiter {rec_name} ({rec_title}) posted {role} at {company} on {platform_name}",
+            logs_dir=logs_dir
+        )
+        logging.info(
+            f"[{platform_name}] 🎯 Harvested Job Poster: '{rec_name}' ({rec_title}) at '{company}' "
+            f"{'(Direct Profile: ' + profile_url + ')' if profile_url else ''}. Queued for LinkedIn outreach."
+        )
+
+    # 2. Always queue an Employee Referral Hunt for any hiring company discovered
+    results["referral_hunt"] = queue_lead_for_hunt(
+        company_name=company,
+        role=role or "Software Engineer",
+        recruiter_hint="",
+        target_type="REFERRAL_HUNT",
+        primary_tech=["Java", "Spring Boot", "Microservices", "React"],
+        source=f"{platform_name}_job_referral",
+        notes=f"Company actively hiring for {role} on {platform_name}. Seeking employee referral.",
+        logs_dir=logs_dir
+    )
+    logging.info(f"[{platform_name}] 🚀 Registered '{company}' for LinkedIn Employee Referral Hunt.")
+
+    return results
+
+
+def register_in_lead_hunt_queue(job_dna, filename, logs_dir=LOGS_DIR):
+    """Register screenshots that lack direct email so LinkedIn agent can hunt for the recruiter/company."""
+    company = job_dna.get('company_name', '').strip()
+    role = job_dna.get('job_title', '').strip() or job_dna.get('normalized_role', '')
+    recruiter = job_dna.get('recruiter_name', '').strip()
+    return queue_lead_for_hunt(
+        company_name=company,
+        role=role,
+        recruiter_hint=recruiter,
+        target_type="SCREENSHOT_HUNT",
+        primary_tech=job_dna.get('primary_tech_stack', []),
+        source=f"screenshot:{filename}",
+        logs_dir=logs_dir
+    )
 
 
 def recompute_user_intent_profile(kb_data=None, logs_dir=LOGS_DIR):

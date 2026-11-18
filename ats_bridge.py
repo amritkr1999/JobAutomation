@@ -191,6 +191,7 @@ JOB DESCRIPTION:
 {jd_text}
 """
     # Try primary dropzone (e.g. Google Drive), then local fallback
+    ticket_created = None
     for target_dir in [primary_dir, local_dir]:
         try:
             os.makedirs(target_dir, exist_ok=True)
@@ -198,7 +199,8 @@ JOB DESCRIPTION:
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
             logging.info(f"[ATS Bridge] Created {ats_type.upper()} Dropzone ticket: {filename}")
-            return file_path
+            ticket_created = file_path
+            break
         except (PermissionError, OSError) as e:
             logging.debug(f"[ATS Bridge] Could not write to {target_dir} ({e}), trying fallback...")
             continue
@@ -206,7 +208,20 @@ JOB DESCRIPTION:
             logging.warning(f"[ATS Bridge] Unexpected ticket write error: {e}")
             break
 
-    return ""
+    # Universally register this hiring company for LinkedIn Employee Referral Hunt
+    try:
+        import intent_miner
+        intent_miner.queue_lead_for_hunt(
+            company_name=company,
+            role=title,
+            target_type="REFERRAL_HUNT",
+            source=f"ats_{ats_type}_referral",
+            notes=f"ATS job {title} at {company} ({url}). Seeking employee referral."
+        )
+    except Exception as ex:
+        logging.debug(f"[ATS Bridge] Referral hunt queue note: {ex}")
+
+    return ticket_created or ""
 
 
 def dispatch_ats_url(ats_type: str, url: str, config: dict, dry_run: bool = False,
@@ -256,10 +271,22 @@ def resolve_tailored_resume_for_ats(config: dict, company: str = "", job_title: 
         tailored_pdf_path = os.path.join(output_dir, f"AMRIT_KUMAR_{clean_co}.pdf")
 
         clean_role = job_title.strip() if job_title else "Full Stack Developer"
+        role_lower = clean_role.lower()
+        if any(k in role_lower for k in ["data analyst", "business intelligence", "bi analyst", "analytics"]):
+            default_reqs = ["SQL", "Python", "Power BI", "PostgreSQL", "ETL", "Data Modeling"]
+        elif any(k in role_lower for k in ["data scientist", "machine learning", "data science", "nlp"]):
+            default_reqs = ["Python", "Machine Learning", "NLP", "SQL", "FastAPI", "Data Modeling"]
+        elif any(k in role_lower for k in ["forward deployed", "fde", "solutions engineer", "deployment engineer", "solution engineer"]):
+            default_reqs = ["Python", "Java", "PostgreSQL", "AWS", "API Integrations", "System Design"]
+        elif any(k in role_lower for k in ["technical project manager", "project manager", "tpm", "scrum master", "delivery manager", "program manager"]):
+            default_reqs = ["Agile / Scrum", "Sprint Delivery", "System Architecture", "Jira", "Risk Management", "Stakeholder Alignment"]
+        else:
+            default_reqs = ["Java 21", "Spring Boot 3", "Microservices", "React 19", "Python FastAPI", "AWS"]
+
         jd_info = {
             "company_name": company,
             "job_title": clean_role,
-            "key_requirements": []
+            "key_requirements": default_reqs
         }
 
         create_tailored_pdf_resume(

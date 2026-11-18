@@ -598,6 +598,20 @@ def apply_to_indeed_jobs(page, config, ledger, logs_dir, max_applies=None):
                     # Bridge any HR email to Dropzone
                     bridge_hr_emails_to_dropzone(jd_text, title, company, job_key, config)
 
+                    # Universally harvest Job Poster & queue Employee Referral Hunt
+                    try:
+                        import intent_miner
+                        intent_miner.bridge_job_poster_and_referral(
+                            page=page,
+                            company=company,
+                            role=title,
+                            platform_name="indeed",
+                            modal_or_container=pane if pane.count() > 0 else None,
+                            logs_dir=logs_dir
+                        )
+                    except Exception as ex:
+                        logging.debug(f"[Indeed] Poster/referral bridge note: {ex}")
+
                     # Look for Apply button scoped to JD pane
                     apply_btn = None
                     if pane.count() > 0:

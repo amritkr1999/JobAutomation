@@ -18,7 +18,9 @@
     "backend_java": "Backend Software Engineer with 4+ years of experience designing scalable distributed systems, event-driven architectures (Kafka), and cloud architectures on AWS.",
     "fullstack": "Full Stack Engineer with 4+ years of experience delivering end-to-end SaaS applications using modern TypeScript, React, Node.js, and cloud platforms.",
     "cloud_devops": "Cloud & DevOps Engineer specializing in AWS cloud infrastructure, container orchestration, and automated CI/CD pipelines.",
-    "ai_systems": "AI Systems & Full Stack Developer with expertise in building asynchronous AI agent pipelines with Python, local LLMs, and modern web frameworks."
+    "ai_systems": "AI Systems & Full Stack Developer with expertise in building asynchronous AI agent pipelines with Python, local LLMs, and modern web frameworks.",
+    "forward_deployed": "Client-facing Forward Deployed Engineer & Solutions Architect with 4+ years of experience translating customer requirements into production-ready software solutions, high-throughput data pipelines, and scalable cloud architectures.",
+    "technical_project_manager": "Technical Project Manager (TPM) with 4+ years of software engineering experience leading agile release cycles, sprint planning, cross-functional engineering alignment, and risk mitigation across enterprise cloud platforms."
   },
   "core_skills": {
     "Backend & Frameworks": [

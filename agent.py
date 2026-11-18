@@ -151,9 +151,37 @@ def extract_text_from_file(file_path):
                 extracted = page.extract_text()
                 if extracted:
                     text += extracted + "\n"
-        elif ext in ['.txt', '.md']:
+        elif ext in ['.txt', '.md', '.csv']:
             with open(temp_file, 'r', encoding='utf-8', errors='ignore') as f:
                 text = f.read()
+        elif ext == '.xlsx':
+            import zipfile
+            import xml.etree.ElementTree as ET
+            with zipfile.ZipFile(temp_file, 'r') as z:
+                strings = []
+                if 'xl/sharedStrings.xml' in z.namelist():
+                    tree = ET.fromstring(z.read('xl/sharedStrings.xml'))
+                    for t in tree.iter('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t'):
+                        if t.text:
+                            strings.append(t.text.strip())
+                text = "\n".join(strings)
+        elif ext in ['.docx']:
+            import zipfile
+            import xml.etree.ElementTree as ET
+            with zipfile.ZipFile(temp_file, 'r') as z:
+                if 'word/document.xml' in z.namelist():
+                    tree = ET.fromstring(z.read('word/document.xml'))
+                    paragraphs = []
+                    for p in tree.iter('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p'):
+                        p_text = ''.join(t.text for t in p.iter('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t') if t.text)
+                        if p_text:
+                            paragraphs.append(p_text)
+                    text = "\n".join(paragraphs)
+        elif ext in ['.gdoc', '.gsheet', '.gslides']:
+            logging.warning(
+                f"[Dropzone] Detected Google Drive web shortcut '{os.path.basename(file_path)}' ({ext}). "
+                "Cloud shortcuts do not store local text. Please save/export as PDF (.pdf), Word (.docx), or Text (.txt)."
+            )
         else:
             logging.warning(f"Unsupported file format: {ext}")
     except Exception as e:
@@ -229,16 +257,49 @@ GENERIC_ROLE_MAILBOXES = {
     'recruiter', 'recruit', 'admin', 'apply', 'hiring', 'team', 'contact',
     'support', 'resume', 'resumes', 'cv', 'staffing', 'enquiry', 'inquiry',
     'hello', 'office', 'help', 'mail', 'people', 'work', 'global',
-    'talentconnect', 'connect', 'query', 'queries'
+    'talentconnect', 'connect', 'query', 'queries',
+    # Common OCR corruptions & role mailboxes
+    'areers', 'areer', 'obs', 'ob', 'alent', 'ecruit', 'ecruitment',
+    'itrecruiter', 'itjobs', 'indiajobs', 'babajob', 'dotnetcareer', 'prjobs'
 }
 
 
 def heal_ocr_email_typos(email_str):
-    """Fix common Tesseract OCR domain typos such as .con -> .com or @gmai.com -> @gmail.com."""
+    """Fix common Tesseract OCR domain and local-part typos and strip trailing text artifacts."""
     if not email_str or '@' not in email_str:
         return email_str
     em = email_str.strip('.,;:()[]{}<>\"\' ')
+
+    # Strip common sentence continuation artifacts trailing valid TLDs
+    corrupt_suffix_match = re.search(
+        r'(\.(?:com|org|net|in|io|ai|co|sa|ae|uk))\.(?:please|pay|thanks|roles|modmed|contact|chargepoint|is|email)$',
+        em, flags=re.I
+    )
+    if corrupt_suffix_match:
+        em = em[:corrupt_suffix_match.end(1)]
+
     local_part, domain = em.split('@', 1)
+    local_low = local_part.lower()
+
+    # Heal common OCR local-part truncations (e.g. leading character dropped on screenshot margins)
+    ocr_local_exact_fixes = {
+        'areers': 'careers',
+        'areer': 'career',
+        'obs': 'jobs',
+        'ob': 'job',
+        'ecruitment': 'recruitment',
+        'ecruit': 'recruit',
+        'alent': 'talent',
+    }
+    if local_low in ocr_local_exact_fixes:
+        local_part = ocr_local_exact_fixes[local_low]
+    elif local_low.startswith('areers.'):
+        local_part = 'careers.' + local_part[7:]
+    elif local_low.startswith('areer.'):
+        local_part = 'career.' + local_part[6:]
+    elif 'detcittecareersindia' in local_low:
+        local_part = local_low.replace('detcittecareersindia', 'deloittecareersindia')
+
     domain_low = domain.lower()
     ocr_domain_fixes = {
         'gmai.com': 'gmail.com',
@@ -252,6 +313,7 @@ def heal_ocr_email_typos(email_str):
         'outlok.com': 'outlook.com',
         'outlook.con': 'outlook.com',
         'hotmai.com': 'hotmail.com',
+        'hdfebank.com': 'hdfcbank.com',
     }
     if domain_low in ocr_domain_fixes:
         domain = ocr_domain_fixes[domain_low]
@@ -819,11 +881,42 @@ def render_pdf_document(output_pdf_path, title, header_info, sections):
 
 
 def generate_tailored_resume_summary(config, jd_info, jd_text):
-    fallback_summary = (
-        "Full Stack Developer with 3+ years of experience architecting and delivering high-performance enterprise applications, "
-        "microservices, and AI-driven platforms. Skilled in Java 21 (Spring Boot 3, Hibernate, JPA), Python (FastAPI), React 19, "
-        "and PostgreSQL, with a proven track record of reducing server response times by 35% and database query latency by 40% on AWS."
-    )
+    role = clean_job_title(jd_info.get('job_title', ''))
+    role_lower = role.lower()
+    if any(k in role_lower for k in ["data analyst", "business intelligence", "bi analyst", "analytics"]):
+        fallback_summary = (
+            "Results-driven Data Analyst with 3.5+ years of experience in solution analysis, database architecture, "
+            "and data-intensive systems across healthcare and B2B procurement domains. Advanced expertise in SQL "
+            "(PostgreSQL, MySQL, query optimization, indexing), Python for data processing (Pandas, NumPy), "
+            "relational data modeling, and automated ETL pipelines with quantified 40-65% query speedups."
+        )
+    elif any(k in role_lower for k in ["data scientist", "machine learning", "data science", "nlp"]):
+        fallback_summary = (
+            "Data Scientist and software engineer with 3.5+ years of experience building applied machine learning "
+            "pipelines, NLP systems, and high-volume data workflows across healthcare and B2B platforms. Pragmatic "
+            "approach to feature engineering, exploratory data analysis, and turning messy unstructured data into "
+            "production-ready models and actionable intelligence."
+        )
+    elif any(k in role_lower for k in ["forward deployed", "fde", "solutions engineer", "deployment engineer", "solution engineer"]):
+        fallback_summary = (
+            "Forward Deployed Engineer and Solutions Architect with 3.5+ years of experience delivering high-impact, "
+            "production-grade software solutions directly into enterprise and government customer environments. "
+            "Skilled in full-stack architecture, Python (FastAPI), Java 21 (Spring Boot 3), PostgreSQL schema tuning, "
+            "and AWS deployments, translating complex client domain requirements into scalable data pipelines and APIs."
+        )
+    elif any(k in role_lower for k in ["technical project manager", "project manager", "tpm", "scrum master", "delivery manager", "program manager"]):
+        fallback_summary = (
+            "Technical Project Manager (TPM) with 3.5+ years of software engineering and solution analysis experience "
+            "driving end-to-end agile delivery of scalable distributed systems and cloud platforms. Proven track record "
+            "leading sprint planning, cross-functional engineering alignment, risk mitigation, and technical architecture "
+            "governance across mission-critical healthcare and procurement initiatives."
+        )
+    else:
+        fallback_summary = (
+            "Full Stack Developer with 3+ years of experience architecting and delivering high-performance enterprise applications, "
+            "microservices, and AI-driven platforms. Skilled in Java 21 (Spring Boot 3, Hibernate, JPA), Python (FastAPI), React 19, "
+            "and PostgreSQL, with a proven track record of reducing server response times by 35% and database query latency by 40% on AWS."
+        )
     if not jd_text or not jd_text.strip():
         return fallback_summary
 
@@ -1002,6 +1095,14 @@ def select_tailored_experience_bullets(jd_info):
             "Spearheaded end-to-end development of VendorInfra, a B2B vendor/contractor procurement platform using Spring Boot, React, and PostgreSQL."
         ),
         (
+            ["fde", "forward deployed", "solutions", "client", "integration", "procurement", "architecture", "tpm", "project manager", "delivery"],
+            "Partnered directly with enterprise clients to map procurement workflows, engineering tailored integration APIs and PostgreSQL data pipelines that accelerated onboarding by 50%."
+        ),
+        (
+            ["python", "pandas", "etl", "data", "pipeline", "data_analyst", "data_scientist", "analytics"],
+            "Engineered automated Python ETL data pipelines (Pandas, AsyncIO) to ingest, extract, and structure data from unstructured procurement RFPs and vendor catalogs, cutting manual verification overhead by 60%."
+        ),
+        (
             ["aws", "cloud", "s3", "rds", "devops", "ci/cd", "docker", "architecture", "schema"],
             "Architected solution schema and managed cloud infrastructure on AWS (S3, RDS), configuring automated deployment pipelines and secure backups."
         ),
@@ -1013,12 +1114,16 @@ def select_tailored_experience_bullets(jd_info):
 
     exp2_pool = [
         (
-            ["postgres", "sql", "jpa", "hibernate", "performance", "latency", "backend", "java", "optimization"],
+            ["postgres", "sql", "jpa", "hibernate", "performance", "latency", "backend", "java", "optimization", "data_analyst", "data_scientist"],
             "Reduced server response times by 35% and query execution latency by 40% via PostgreSQL query tuning and JPA indexing."
         ),
         (
-            ["microservices", "backend", "data", "scale", "high-throughput", "java", "spring"],
+            ["microservices", "backend", "data", "scale", "high-throughput", "java", "spring", "data_analyst", "data_scientist"],
             "Engineered high-throughput data processing routines for Medplat (National Health Data Platform), managing millions of public medical records."
+        ),
+        (
+            ["data_analyst", "data_scientist", "python", "sql", "validation", "anomaly detection", "data quality"],
+            "Automated data validation and anomaly detection workflows in Python and SQL, eliminating record discrepancies to achieve a 99.8% data quality accuracy rate ahead of compliance audits."
         ),
         (
             ["fullstack", "full stack", "react", "healthcare", "abdm", "workflow", "api"],
@@ -1029,8 +1134,12 @@ def select_tailored_experience_bullets(jd_info):
             "Leveraged AI-assisted development tooling (Antigravity), improving feature delivery performance and engineering throughput by 30%."
         ),
         (
-            ["lead", "senior", "mentor", "review", "junit", "testing", "agile"],
+            ["lead", "senior", "mentor", "review", "junit", "testing", "agile", "tpm", "project manager", "scrum", "delivery"],
             "Mentored and led a 3-member engineering team through code reviews, standard design patterns, and automated unit testing."
+        ),
+        (
+            ["fde", "forward deployed", "solutions", "client", "stakeholder", "abdm", "healthcare", "tpm", "project manager", "architecture"],
+            "Acted as technical solutions lead interfacing directly with healthcare domain experts, translating ABDM compliance guidelines and clinical workflows into scalable microservices."
         ),
     ]
 
@@ -1047,7 +1156,17 @@ def select_tailored_experience_bullets(jd_info):
 
 def build_adaptive_subtitle(jd_info):
     role = clean_job_title(jd_info.get('job_title', 'Full Stack Developer'))
-    core_stack = ["Java 21", "Spring Boot 3", "Microservices", "React 19", "Python FastAPI", "AWS"]
+    role_lower = role.lower()
+    if any(k in role_lower for k in ["data analyst", "business intelligence", "bi analyst", "analytics"]):
+        core_stack = ["SQL", "Python", "Power BI", "PostgreSQL", "ETL", "Data Modeling"]
+    elif any(k in role_lower for k in ["data scientist", "machine learning", "data science", "nlp"]):
+        core_stack = ["Python", "Machine Learning", "NLP", "SQL", "FastAPI", "Data Modeling"]
+    elif any(k in role_lower for k in ["forward deployed", "fde", "solutions engineer", "deployment engineer", "solution engineer"]):
+        core_stack = ["Python", "Java", "PostgreSQL", "AWS", "API Integrations", "Client Solutions"]
+    elif any(k in role_lower for k in ["technical project manager", "project manager", "tpm", "scrum master", "delivery manager", "program manager"]):
+        core_stack = ["Agile / Scrum", "Sprint Delivery", "System Architecture", "Jira", "Risk Management", "Stakeholder Alignment"]
+    else:
+        core_stack = ["Java 21", "Spring Boot 3", "Microservices", "React 19", "Python FastAPI", "AWS"]
     reqs_lower = " ".join(jd_info.get('key_requirements', [])).lower()
     if "kafka" in reqs_lower and "Kafka" not in core_stack:
         core_stack.insert(3, "Kafka")
@@ -1870,6 +1989,13 @@ def can_send_email(recipient_email, config, sent_records, suppression_data, send
     if not norm_email:
         return False, "SKIPPED_INVALID_EMAIL", f"Invalid email format: {recipient_email}"
 
+    try:
+        import crm_tracker
+        if not crm_tracker.is_valid_recruiter_email(recipient_email):
+            return False, "SKIPPED_INVALID_EMAIL", f"Rejected invalid, corrupt or noise email address: {recipient_email}"
+    except Exception:
+        pass
+
     norm_sender = normalize_email_identity(sender_email) if sender_email else ""
     if norm_sender and norm_email == norm_sender:
         return True, "ALLOWED_SELF_TEST", "Self-test email bypass"
@@ -2075,7 +2201,12 @@ def sync_imap_feedback(config, logs_dir, sent_records, suppression_data):
                         sent_records[norm_b]["status"] = "BOUNCED"
                         supp_updated = True
                         sent_updated = True
-                        logging.info(f"[Self-Learning] Auto-suppressed bounced address: {addr}")
+                        try:
+                            import crm_tracker
+                            crm_tracker.delete_contact(addr, reason="HARD_BOUNCE_IMAP")
+                        except Exception as crm_ex:
+                            logging.debug(f"[Self-Learning] CRM delete contact note: {crm_ex}")
+                        logging.info(f"[Self-Learning] Auto-suppressed & deleted bounced address: {addr}")
 
         # 2. Detect Recruiter Replies from known recipients in sent_records
         typ, recent_ids = mail.search(None, f'(SINCE "{since_date}")')
@@ -2097,6 +2228,11 @@ def sync_imap_feedback(config, logs_dir, sent_records, suppression_data):
                             stats["variants"][variant_used]["replies"] = int(stats["variants"][variant_used].get("replies", 0)) + 1
                         promote_to_winning_examples(logs_dir, norm_f, rec)
                         sent_updated = True
+                        try:
+                            import crm_tracker
+                            crm_tracker.update_stage(norm_f, "REPLIED", note="Detected recruiter reply via IMAP sync")
+                        except Exception as crm_ex:
+                            logging.debug(f"[Self-Learning] CRM update stage note: {crm_ex}")
                         logging.info(f"[Self-Learning] Detected recruiter reply from {f_addr} (variant={variant_used})!")
 
                         # Close the loop: if lead came from LinkedIn Recruiter Harvester, credit query stream
@@ -2289,6 +2425,41 @@ def maybe_run_daily_linkedin_automation(config, logs_dir, force_linkedin=False):
         logging.warning(f"[LinkedIn Daily Scheduler] Skipped or encountered error: {e}")
 
 
+def is_career_advice_or_strategy(text: str, filename: str) -> bool:
+    """
+    Check if text or file represents career advice, interview tips, resume rules,
+    or Q&A intended to improve system capabilities rather than an active job opening.
+    """
+    if not text:
+        return False
+    text_lower = text.lower()
+    fname_lower = filename.lower()
+
+    # 1. Filename hints
+    advice_fname_markers = ['tip', 'advice', 'reel', 'strategy', 'qa', 'q&a', 'interview', 'hack', 'guide', 'formula', 'notes', 'agencies', 'agency', 'directory']
+    if any(m in fname_lower for m in advice_fname_markers):
+        return True
+
+    # 2. Strong advice / instructional phrases
+    advice_phrases = [
+        "cold email tip", "subject line tip", "email hack", "opening hook",
+        "resume tip", "resume hack", "ats hack", "bullet formula", "xyz formula",
+        "interview tip", "how to answer", "tricky question", "screening question",
+        "salary negotiation", "expected ctc", "why should we hire you",
+        "boolean search", "search dork", "recruiter search hack", "1-page resume",
+        "power verbs", "career advice", "job search strategy", "don't say this",
+        "never say this", "ask this question", "interview question:", "career hack"
+    ]
+    if any(p in text_lower for p in advice_phrases):
+        return True
+
+    # 3. Explicit Q&A format: "Q: ... A: ..." or "Question: ... Answer: ..."
+    if re.search(r'\b(?:Q|Question)\s*:\s*.+?\b(?:A|Answer)\s*:', text, re.IGNORECASE | re.DOTALL):
+        return True
+
+    return False
+
+
 def process_dropzone():
     import fcntl
     lock_path = "/tmp/job_automation_agent.lock"
@@ -2377,9 +2548,23 @@ def process_dropzone():
     for file_path in files:
         filename = os.path.basename(file_path)
         logging.info(f"--- Processing File: {filename} ---")
+        ext = os.path.splitext(file_path)[1].lower()
+
+        # Check if dropped file is a Video or Audio Reel / Career Tip Clip
+        supported_media = ('.mp4', '.mov', '.m4v', '.mp3', '.m4a', '.wav', '.aac')
+        if ext in supported_media:
+            logging.info(f"[Dropzone Universal Router] Detected media clip {filename}. Routing to Reel Knowledge Engine...")
+            try:
+                import reel_knowledge_agent
+                rec = reel_knowledge_agent.ingest_reel(file_path, auto_apply=True, config=config)
+                logging.info(f"[Dropzone Universal Router] Absorbed knowledge from {filename} (Category: {rec.get('category')}). Updated components: {rec.get('applied_components')}")
+                os.remove(file_path)
+                logging.info(f"Cleaned up processed media file: {filename}")
+            except Exception as e:
+                logging.error(f"Error processing media file {filename}: {e}")
+            continue
         
         # Autonomous Intent & Knowledge Ingestion from Screenshots
-        ext = os.path.splitext(file_path)[1].lower()
         if ext in ['.png', '.jpg', '.jpeg', '.webp', '.bmp']:
             try:
                 intent_miner.ingest_screenshot_knowledge(file_path, config=config, logs_dir=logs_dir)
@@ -2417,6 +2602,34 @@ def process_dropzone():
                 logging.info(f"Cleaned up processed {ats_type.title()} dropzone file: {filename}")
             except Exception as e:
                 logging.error(f"Error removing dropzone file {filename}: {e}")
+            continue
+
+        # Check if dropped file contains an Instagram Reel / YouTube Shorts URL
+        reel_url_match = re.search(r'https?://(?:www\.)?(?:instagram\.com/reel|youtube\.com/shorts|tiktok\.com|youtu\.be)[^\s\'"<>\)]+', jd_text)
+        if reel_url_match:
+            reel_url = reel_url_match.group(0)
+            logging.info(f"[Dropzone Universal Router] Detected Reel/Shorts URL in {filename}: {reel_url}. Ingesting knowledge...")
+            try:
+                import reel_knowledge_agent
+                rec = reel_knowledge_agent.ingest_reel(reel_url, auto_apply=True, config=config)
+                logging.info(f"[Dropzone Universal Router] Ingested reel strategy from {filename}: {rec.get('title')} ({rec.get('category')})")
+                os.remove(file_path)
+                logging.info(f"Cleaned up processed reel URL file: {filename}")
+            except Exception as e:
+                logging.error(f"Error ingesting reel URL from {filename}: {e}")
+            continue
+
+        # Check if dropped file is Career Advice, Interview Q&A, or Strategy meant to improve the system
+        if is_career_advice_or_strategy(jd_text, filename):
+            logging.info(f"[Dropzone Universal Router] Detected Career Advice / Strategy in {filename}. Routing to Knowledge Engine...")
+            try:
+                import reel_knowledge_agent
+                rec = reel_knowledge_agent.ingest_reel(filename, raw_text=jd_text, auto_apply=True, config=config)
+                logging.info(f"[Dropzone Universal Router] Extracted knowledge from {filename} -> Category: {rec.get('category')}. Updated components: {rec.get('applied_components')}")
+                os.remove(file_path)
+                logging.info(f"Cleaned up processed career strategy/advice dropzone file: {filename}")
+            except Exception as e:
+                logging.error(f"Error ingesting career advice from {filename}: {e}")
             continue
 
         # Fast Pre-LLM Deduplication & Suppression Check (saves ~65s of Ollama + PDF rendering on duplicates)
@@ -2558,6 +2771,21 @@ def process_dropzone():
                     )
         else:
             logging.info(f"No valid recipient email detected for {raw_company or filename}. PDFs saved locally.")
+            if raw_company and jd_info.get('job_title'):
+                try:
+                    import intent_miner
+                    lead_dna = {
+                        "company_name": raw_company,
+                        "job_title": jd_info.get('job_title'),
+                        "normalized_role": jd_info.get('job_title'),
+                        "recruiter_name": jd_info.get('recruiter_name', ''),
+                        "primary_tech_stack": jd_info.get('key_requirements', []),
+                        "source": filename
+                    }
+                    intent_miner.register_in_lead_hunt_queue(lead_dna, filename, logs_dir)
+                    logging.info(f"[Lead Hunt Queue] Registered {raw_company} ({jd_info.get('job_title')}) for LinkedIn recruiter discovery.")
+                except Exception as e:
+                    logging.debug(f"Lead hunt queue registration notice: {e}")
         
         # 5. Clean up processed source file (preserve if SMTP failed so next run retries)
         if any_smtp_failed:

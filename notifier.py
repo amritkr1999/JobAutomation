@@ -11,6 +11,8 @@ import os
 import sys
 import json
 import time
+import re
+import queue
 import urllib.parse
 import urllib.request
 import logging
@@ -777,6 +779,73 @@ def run_telegram_bot_listener():
     last_update_id = 0
     active_review_state = {"qid": None, "question": None, "default": None}
 
+    # Thread-safe sequential processing queue for Reels & Advice clips
+    reel_queue = queue.Queue()
+    reel_queue_state = {"busy": False, "total_processed": 0}
+
+    def _reel_queue_worker():
+        while True:
+            try:
+                task = reel_queue.get()
+                if task is None:
+                    break
+                reel_queue_state["busy"] = True
+
+                source_val = task["source"]
+                caption_val = task.get("caption")
+                was_queued = task.get("was_queued", False)
+                rem_before = reel_queue.qsize()
+
+                if was_queued:
+                    tg.send_message(
+                        f"🎬 *Starting Next Reel from Queue!* ({rem_before} remaining)\n"
+                        f"_Extracting speech, OCR keyframes & caption..._"
+                    )
+
+                import reel_knowledge_agent
+                rec = reel_knowledge_agent.ingest_reel(source_val, caption=caption_val, auto_apply=True)
+                reel_queue_state["total_processed"] += 1
+
+                comp_str = "\n".join([f"• `{c}`" for c in rec.get("applied_components", [])]) or "• Knowledge Base saved"
+                takes = "\n".join([f"• {t}" for t in rec.get("actionable_takeaways", [])[:3]])
+                rem_after = reel_queue.qsize()
+                rem_note = f"\n_({rem_after} more reels queued in line)_" if rem_after > 0 else ""
+
+                tg.send_message(
+                    f"🎉 *Career Strategy Ingested & Applied!*{rem_note}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📌 *Title:* {rec.get('title')}\n"
+                    f"🏷️ *Category:* `{rec.get('category')}`\n"
+                    f"💡 *Summary:* {rec.get('summary')}\n\n"
+                    f"*Key Rules Extracted:*\n{takes}\n\n"
+                    f"⚡ *System Modifications:*\n{comp_str}",
+                    reply_markup={"inline_keyboard": [
+                        [{"text": "📜 View Full Detail", "callback_data": f"view_reel:{rec.get('id')}"}],
+                        [{"text": "🌐 Open Web Dashboard", "url": "http://127.0.0.1:8765"}]
+                    ]}
+                )
+            except Exception as r_err:
+                tg.send_message(f"⚠️ Error processing reel: {r_err}")
+            finally:
+                reel_queue_state["busy"] = False
+                reel_queue.task_done()
+
+    threading.Thread(target=_reel_queue_worker, daemon=True).start()
+
+    def enqueue_reel_task(source_val, caption=None, label="Reel"):
+        q_size = reel_queue.qsize()
+        is_busy = reel_queue_state["busy"]
+        if not is_busy and q_size == 0:
+            tg.send_message(f"🎬 *{label} Received!* Fetching audio, OCR & caption; modifying system...")
+            reel_queue.put({"source": source_val, "caption": caption, "was_queued": False})
+        else:
+            pos = q_size + (1 if is_busy else 0) + 1
+            tg.send_message(
+                f"📥 *{label} Added to Queue (Position #{pos})!*\n"
+                f"_Currently processing another reel. Your system processes them one-by-one so nothing gets stuck, overloaded, or missed._"
+            )
+            reel_queue.put({"source": source_val, "caption": caption, "was_queued": True})
+
     while True:
         try:
             resp = tg._api_call(f"getUpdates?offset={last_update_id + 1}&timeout=20", method="GET", timeout=30)
@@ -915,11 +984,56 @@ def run_telegram_bot_listener():
                             import task_manager
                             task_manager.complete_task(task_id, completion_note="Completed via Telegram inline button.")
                             tg.send_message(f"✅ *Task Completed!* Marked `{task_id}` as done.")
+
+                        elif cb_data.startswith("view_reel:"):
+                            rid = cb_data.split("view_reel:", 1)[1]
+                            try:
+                                import reel_knowledge_agent
+                                kb = reel_knowledge_agent.load_knowledge_base()
+                                reel_item = kb.get("reels", {}).get(rid)
+                                if not reel_item:
+                                    tg.send_message("⚠️ Reel strategy not found.")
+                                else:
+                                    takeaways = "\n".join([f"• {t}" for t in reel_item.get("actionable_takeaways", [])])
+                                    tg.send_message(
+                                        f"🎬 *Reel Strategy Details*\n"
+                                        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                                        f"📌 *Title:* {reel_item.get('title')}\n"
+                                        f"🏷️ *Category:* `{reel_item.get('category')}`\n"
+                                        f"💡 *Summary:* {reel_item.get('summary')}\n\n"
+                                        f"*Key Takeaways:*\n{takeaways}\n\n"
+                                        f"⚡ *Applied System Modules:* `{', '.join(reel_item.get('applied_components', []))}`"
+                                    )
+                            except Exception as err:
+                                tg.send_message(f"⚠️ Error loading reel detail: {err}")
                     continue
 
                 msg = update.get("message", {})
                 chat_id = str(msg.get("chat", {}).get("id", ""))
-                text = (msg.get("text") or "").strip()
+                text = (msg.get("text") or msg.get("caption") or "").strip()
+
+                # Check if user sent a video, audio, or document directly (with or without caption)
+                video_obj = msg.get("video") or msg.get("document") or msg.get("audio") or msg.get("voice")
+                user_caption = (msg.get("caption") or "").strip()
+                if chat_id == tg.chat_id and video_obj:
+                    file_id = video_obj.get("file_id")
+                    if file_id:
+                        tg.send_message("📹 *Media Clip Received!* Downloading video file to dropzone...")
+                        def _download_and_enqueue_media(fid, mime_t, cap_text):
+                            try:
+                                import reel_knowledge_agent
+                                f_info = tg._api_call(f"getFile?file_id={fid}", method="GET")
+                                if f_info and f_info.json().get("ok"):
+                                    f_path = f_info.json()["result"]["file_path"]
+                                    download_url = f"https://api.telegram.org/file/bot{tg.bot_token}/{f_path}"
+                                    local_ext = os.path.splitext(f_path)[1] or ".mp4"
+                                    save_dest = os.path.join(reel_knowledge_agent.DROPZONE_REELS_DIR, f"tg_{fid[:8]}{local_ext}")
+                                    urllib.request.urlretrieve(download_url, save_dest)
+                                    enqueue_reel_task(save_dest, caption=cap_text if cap_text else None, label="Video Clip")
+                            except Exception as dl_err:
+                                tg.send_message(f"⚠️ Error downloading video: {dl_err}")
+                        threading.Thread(target=_download_and_enqueue_media, args=(file_id, video_obj.get("mime_type", ""), user_caption), daemon=True).start()
+                        continue
 
                 if chat_id != tg.chat_id or not text:
                     continue
@@ -1047,11 +1161,80 @@ def run_telegram_bot_listener():
 
                         threading.Thread(target=_run_bg, args=(target, flags), daemon=True).start()
 
+                    # Instagram Reel / YouTube Shorts / TikTok Link or /reel command
+                    elif any(p in text.lower() for p in ("instagram.com/reel", "instagram.com/p/", "instagram.com/share", "youtube.com/shorts", "tiktok.com")) or text.lower().startswith(("/reel", "reel ")):
+                        raw_target = text
+                        if text.lower().startswith("/reel"):
+                            parts = text.split(None, 1)
+                            raw_target = parts[1] if len(parts) > 1 else ""
+
+                        if not raw_target:
+                            tg.send_message("❓ *Please share a reel link or advice text.* Example:\n`/reel https://instagram.com/reel/...`\nOr paste the link directly into the chat!")
+                            continue
+
+                        # Extract all URLs if user pasted multiple links in a single message
+                        found_urls = re.findall(r'https?://[^\s]+', raw_target)
+                        valid_reel_urls = [u for u in found_urls if any(p in u.lower() for p in ("instagram.com", "youtube.com/shorts", "tiktok.com"))]
+
+                        if len(valid_reel_urls) > 1:
+                            tg.send_message(f"📦 *Batch Detected: {len(valid_reel_urls)} Reel Links!*\n_Queued all {len(valid_reel_urls)} reels for sequential one-by-one processing so your Mac stays smooth and nothing gets stuck._")
+                            for idx, u in enumerate(valid_reel_urls, 1):
+                                enqueue_reel_task(u, label=f"Reel #{idx}")
+                        elif len(valid_reel_urls) == 1:
+                            enqueue_reel_task(valid_reel_urls[0], label="Reel")
+                        else:
+                            # Plain text advice entered via /reel
+                            enqueue_reel_task(raw_target, label="Career Tip")
+
+                    elif text.lower() in ("/reels", "/strategies", "reels", "strategies"):
+                        try:
+                            import reel_knowledge_agent
+                            stats = reel_knowledge_agent.get_strategy_stats()
+                            cats = "\n".join([f"• {k}: `{v}`" for k, v in stats.get("categories_breakdown", {}).items()]) or "• None yet"
+                            q_size = reel_queue.qsize()
+                            busy_now = reel_queue_state["busy"]
+                            queue_status = f"• Queue Status: ⏳ `{1 if busy_now else 0} processing, {q_size} waiting`\n" if (busy_now or q_size > 0) else "• Queue Status: 🟢 `Idle (Ready for reels)`\n"
+                            tg.send_message(
+                                f"🎬 *Reel Strategies & Knowledge Base*\n"
+                                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                                f"• Total Reels Ingested: `{stats.get('total_reels_ingested', 0)}`\n"
+                                f"• Active System Strategies: `{stats.get('active_reels', 0)}`\n"
+                                f"{queue_status}"
+                                f"• Cold Email Subject Variants: `{stats.get('cold_email_subjects_count', 0)}`\n"
+                                f"• Cold Email Pitch Hooks: `{stats.get('cold_email_hooks_count', 0)}`\n"
+                                f"• Resume ATS Rules: `{stats.get('resume_rules_count', 0)}`\n"
+                                f"• Discovered Search Queries: `{stats.get('search_queries_count', 0)}`\n"
+                                f"• System Evolution Ideas: `{stats.get('feature_ideas_count', 0)}`\n\n"
+                                f"*Category Breakdown:*\n{cats}\n\n"
+                                f"👉 _Tip: Type /ideas to see all proposed feature expansion ideas!_",
+                                reply_markup={"inline_keyboard": [[{"text": "🌐 Open Reel Lab on Dashboard", "url": "http://127.0.0.1:8765"}]]}
+                            )
+                        except Exception as e:
+                            tg.send_message(f"⚠️ Error loading strategies: {e}")
+
+                    elif text.lower() in ("/ideas", "/roadmap", "ideas", "roadmap"):
+                        try:
+                            import reel_knowledge_agent
+                            ideas = reel_knowledge_agent.get_feature_ideas()
+                            if not ideas:
+                                tg.send_message("💡 *No New Feature Ideas Logged Yet!*\n_Share any strategic reel to automatically harvest novel automation features and expansion ideas._")
+                            else:
+                                msg = f"💡 *System Evolution & Feature Ideas ({len(ideas)}):*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                                for idx, idea in enumerate(ideas[-5:], 1):
+                                    msg += f"{idx}. *[{idea.get('potential_impact', 'HIGH')}]* `{idea.get('title')}`\n   _{idea.get('description')[:85]}_\n"
+                                msg += "\n👉 _Tip: Tell Antigravity anytime: 'Implement feature idea #X' to build it!_"
+                                tg.send_message(msg)
+                        except Exception as e:
+                            tg.send_message(f"⚠️ Error loading feature ideas: {e}")
+
                     elif text.lower() in ("/help", "/start", "help", "hello", "hi"):
                         help_text = (
                             "🤖 *JOB AUTOMATION BOT COMMANDS*\n"
                             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                            "• `/review` - Review & set preferred answers for default-answered questions\n"
+                            "• `/reel [link]` - Ingest Instagram reel/video tip & auto-upgrade system\n"
+                            "• `/reels` - Active reel strategies, cold email hooks & resume rules\n"
+                            "• `/ideas` - Review novel feature expansion ideas extracted from reels\n"
+                            "• `/review` - Review & set preferred answers for screening questions\n"
                             "• `/tasks` - Pending recruiter tasks, interviews & action items\n"
                             "• `/pipeline` - Recruiter CRM relationship stages & responses\n"
                             "• `/inbound` - Trigger on-demand recruiter email sweep & link apply\n"
@@ -1061,9 +1244,9 @@ def run_telegram_bot_listener():
                             "• `/status` - Today's applications summary & keyword yields\n"
                             "• `/keywords` - Today's keyword performance & yield stats\n"
                             "• `/run all` - Trigger full paced application wave right now\n"
-                            "• `/run [portal]` - Trigger specific portal (e.g. `/run greenhouse`, `/run workday`, `/run forms`, `/run inbound`)\n"
+                            "• `/run [portal]` - Trigger specific portal (e.g. `/run greenhouse`, `/run workday`, `/run cold`)\n"
                             "• `/help` - Show this commands guide\n\n"
-                            "💡 _When a recruiter sends an application link or reply draft, you will receive an interactive card here with one-click approval buttons._"
+                            "💡 *Reel Tip:* When browsing Instagram or WhatsApp on your phone, simply tap 'Share' -> select this Telegram bot to automatically extract career strategies!"
                         )
                         tg.send_message(help_text)
                 except Exception as cmd_err:

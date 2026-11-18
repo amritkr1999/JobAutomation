@@ -77,7 +77,10 @@
         "Spring Boot Microservices Developer",
         "Java Backend Developer Spring Boot",
         "Full Stack Developer React Java",
-        "Python FastAPI Developer"
+        "Python FastAPI Developer",
+        "Forward Deployed Engineer",
+        "Solutions Engineer",
+        "Technical Project Manager"
       ]
     }
   },
@@ -117,7 +120,10 @@
       "Software Engineer",
       "Backend Engineer",
       "Java Developer",
-      "Python Developer"
+      "Python Developer",
+      "Forward Deployed Engineer",
+      "Solutions Engineer",
+      "Technical Project Manager"
     ],
     "review_mode": false,
     "target_boards": [
@@ -169,7 +175,10 @@
         "Spring Boot Microservices Developer",
         "Java Backend Developer",
         "Full Stack Developer React Java",
-        "Python FastAPI Developer"
+        "Python FastAPI Developer",
+        "Forward Deployed Engineer",
+        "Solutions Engineer",
+        "Technical Project Manager"
       ]
     }
   },
@@ -227,7 +236,10 @@
       "queries": [
         "Full Stack Developer",
         "Backend Developer",
-        "Software Engineer"
+        "Software Engineer",
+        "Forward Deployed Engineer",
+        "Solutions Engineer",
+        "Technical Project Manager"
       ]
     }
   },
@@ -259,8 +271,8 @@
         "hiring_manager"
       ],
       "templates": {
-        "agency_recruiter": "Hi {first_name}, saw you specialize in tech recruitment. As a software developer, would love to connect and stay on your radar for future openings. Cheers!",
-        "hiring_manager": "Hi {first_name}, noticed your engineering work at {company}. Always keen to connect with fellow backend & cloud engineering folks. Best!",
+        "agency_recruiter": "Hi {first_name}, saw your focus on tech recruitment at {company}. As a software developer, would love to connect and stay on your radar for future openings. Cheers!",
+        "hiring_manager": "Hi {first_name}, noticed your engineering leadership at {company}. Always keen to connect with leaders in backend & cloud tech. Best!",
         "post_author": "Hi {first_name}, came across your recent tech hiring post. Would love to connect and stay in touch as fellow tech professionals. Cheers!"
       },
       "weekly_limit": 80,
@@ -345,7 +357,10 @@
         "Spring Boot Microservices Developer",
         "Java Backend Developer",
         "Full Stack Developer React Java",
-        "Python FastAPI React Developer"
+        "Python FastAPI React Developer",
+        "Forward Deployed Engineer",
+        "Solutions Engineer",
+        "Technical Project Manager"
       ]
     }
   },
@@ -429,7 +444,10 @@
         "Java Full Stack Developer",
         "Spring Boot Microservices Developer",
         "Java Backend Developer",
-        "Full Stack Developer React"
+        "Full Stack Developer React",
+        "Forward Deployed Engineer",
+        "Solutions Engineer",
+        "Technical Project Manager"
       ],
       "skip_external_company_sites": true
     }
@@ -548,7 +566,10 @@
       "queries": [
         "Java Full Stack Developer",
         "Spring Boot Microservices Developer",
-        "Full Stack Developer React Java"
+        "Full Stack Developer React Java",
+        "Forward Deployed Engineer",
+        "Solutions Engineer",
+        "Technical Project Manager"
       ]
     }
   },
@@ -584,7 +605,10 @@
       "queries": [
         "Java Full Stack Developer",
         "Spring Boot Microservices",
-        "Full Stack Developer React"
+        "Full Stack Developer React",
+        "Forward Deployed Engineer",
+        "Solutions Engineer",
+        "Technical Project Manager"
       ]
     }
   },
@@ -613,7 +637,10 @@
     "queries": [
       "Java",
       "Full Stack",
-      "Software Engineer"
+      "Software Engineer",
+      "Forward Deployed",
+      "Solutions Engineer",
+      "Technical Project Manager"
     ],
     "review_mode": false,
     "standard_password": "YourWorkdayAccountPassword123!",

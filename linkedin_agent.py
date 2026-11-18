@@ -1217,7 +1217,17 @@ def run_linkedin_easy_apply(context, page, config, ledger, logs_dir, max_applies
                         company = (comp_loc.inner_text(timeout=400) or "").strip()
 
                     job_key = f"{company}_{title}".strip("_")
-                    if not job_key or job_key in applied_ledger:
+                    if not job_key:
+                        continue
+
+                    # Universally harvest Job Poster & queue Referral Hunt for any active hiring company
+                    try:
+                        import intent_miner
+                        intent_miner.bridge_job_poster_and_referral(page, company, title, platform_name="linkedin", logs_dir=logs_dir)
+                    except Exception as bridge_err:
+                        logging.debug(f"[LinkedIn] Job poster/referral bridge error: {bridge_err}")
+
+                    if job_key in applied_ledger:
                         continue
 
                     # Filter out excluded titles
@@ -1388,30 +1398,101 @@ def is_hiring_relevant(headline, title="", snippet=""):
     return False
 
 
+def classify_candidate_category(headline="", role="", company="", text_snippet=""):
+    """
+    Accurately classifies a LinkedIn candidate based on headline, role, and context
+    to ensure recruiters, hiring managers, and peer engineers receive appropriate outreach.
+    Returns: 'agency_recruiter', 'hiring_manager', or 'referral_lead'
+    """
+    combined = f"{headline} {role} {text_snippet}".lower()
+
+    # 1. Recruiter / Talent Acquisition / HR check (highest priority to prevent role confusion)
+    recruiter_markers = [
+        "talent acquisition", "recruiter", "recruitment", "staffing",
+        "talent partner", "talent specialist", "talent sourcer", "talent lead",
+        "talent manager", "talent scout", "talent advisor", "head of talent",
+        "human resources", "hr manager", "hr lead", "hr specialist", "people partner",
+        "people & culture", "people operations", "campus recruiter", "technical recruiter",
+        "it recruiter", "hiring top talent", "sourcer", "headhunter", "hr "
+    ]
+    if any(rm in combined for rm in recruiter_markers):
+        return "agency_recruiter"
+
+    # 2. Engineering Leadership / Management
+    lead_markers = [
+        "engineering manager", "engineering lead", "tech lead manager", "tlm",
+        "director of engineering", "vp of engineering", "head of engineering",
+        "software engineering manager", "development manager"
+    ]
+    if any(lm in combined for lm in lead_markers):
+        return "hiring_manager"
+
+    # 3. Individual Contributor / Fellow Engineers
+    eng_markers = [
+        "software engineer", "developer", "backend", "cloud engineer",
+        "full stack", "frontend", "sde", "member of technical staff",
+        "software development", "systems engineer", "java"
+    ]
+    if any(em in combined for em in eng_markers):
+        return "referral_lead"
+
+    return "hiring_manager"
+
+
 def craft_casual_note(candidate, config):
     """
     Craft a friendly, completely non-pushy connection note strictly under 180 characters.
     Zero asks for referrals, interviews, or resume reviews.
     """
     templates = config.get("linkedin", {}).get("connection_outreach", {}).get("templates", {})
-    category = candidate.get("category", "post_author")
+    raw_category = candidate.get("category", "post_author")
+    headline = candidate.get("headline", "")
+    role_label = candidate.get("role", "software engineering").strip()
 
     raw_name = candidate.get("name", "").strip()
     first_name = raw_name.split()[0] if raw_name else "there"
     first_name = re.sub(r'[^\w\s]', '', first_name).strip() or "there"
 
     raw_company = candidate.get("company", "").strip()
-    company = raw_company if raw_company and len(raw_company) <= 25 else "your company"
+    company = raw_company if raw_company and len(raw_company) <= 25 else ""
+
+    # Dynamic role classification & safety override based on actual headline
+    detected_category = classify_candidate_category(headline, role_label, company)
+
+    # If the profile is clearly a recruiter/talent acquisition, NEVER treat them as engineering hiring manager or peer
+    if detected_category == "agency_recruiter":
+        category = "agency_recruiter"
+    else:
+        category = raw_category or detected_category
+
+    if len(role_label) > 22 or not role_label:
+        role_label = "software engineering"
 
     if category == "agency_recruiter":
-        template = templates.get(
-            "agency_recruiter",
-            "Hi {first_name}, saw you specialize in tech recruitment. As a Java & Full Stack dev, would love to connect and stay on your radar for future openings. Cheers!"
-        )
+        if company and company != "your company":
+            template = (
+                f"Hi {{first_name}}, saw your focus on tech recruitment at {company}. As a Java & Cloud dev, "
+                f"would love to connect and stay on your radar for future openings. Cheers!"
+            )
+        else:
+            template = templates.get(
+                "agency_recruiter",
+                "Hi {first_name}, saw you specialize in tech recruitment. As a Java & Full Stack dev, would love to connect and stay on your radar for future openings. Cheers!"
+            )
     elif category == "hiring_manager":
         template = templates.get(
             "hiring_manager",
-            "Hi {first_name}, noticed your engineering work at {company}. Always keen to connect with fellow backend & cloud engineering folks. Best, Amrit"
+            "Hi {first_name}, noticed your engineering leadership at {company}. Always keen to connect with leaders in backend & cloud tech. Best, Amrit"
+        )
+    elif category == "referral_lead":
+        template = templates.get(
+            "referral_lead",
+            "Hi {first_name}, noticed your engineering work at {company}. Exploring backend roles there—would love to connect with fellow engineers and learn about the team! Cheers, Amrit"
+        )
+    elif category == "job_poster":
+        template = templates.get(
+            "job_poster",
+            "Hi {first_name}, saw the {role} role you posted for {company}. As a Java/Spring dev, I'd love to connect and share my background. Cheers, Amrit"
         )
     else:  # post_author or default
         template = templates.get(
@@ -1419,19 +1500,36 @@ def craft_casual_note(candidate, config):
             "Hi {first_name}, came across your recent tech hiring post. Would love to connect and stay in touch as fellow tech professionals. Cheers, Amrit"
         )
 
+    co_display = company if company else "your company"
     try:
-        note = template.format(first_name=first_name, company=company)
+        note = template.format(first_name=first_name, company=co_display, role=role_label)
     except Exception:
         note = f"Hi {first_name}, would love to connect with fellow tech professionals. Cheers, Amrit"
 
     # Enforce strict 180-char cap
     if len(note) > 180:
         if category == "agency_recruiter":
-            note = f"Hi {first_name}, saw your focus on tech recruitment. Would love to connect and stay on your radar for Java & Full Stack roles. Cheers, Amrit"
+            if company:
+                note = f"Hi {first_name}, saw your focus on tech hiring at {company}. As a Java/Cloud dev, would love to connect and stay on your radar. Cheers!"
+            else:
+                note = f"Hi {first_name}, saw your focus on tech recruitment. Would love to connect and stay on your radar for Java & Full Stack roles. Cheers!"
         elif category == "hiring_manager":
-            note = f"Hi {first_name}, noticed your work in engineering. Keen to connect with fellow backend & cloud folks. Best, Amrit"
+            note = f"Hi {first_name}, noticed your engineering leadership at {company}. Always keen to connect with leaders in backend & cloud tech. Best, Amrit"
+        elif category == "referral_lead":
+            note = f"Hi {first_name}, noticed your engineering work at {company}. Keen to connect with fellow engineers and stay in touch! Cheers, Amrit"
+        elif category == "job_poster":
+            note = f"Hi {first_name}, saw the role you posted for {company}. As a Java/Spring dev, would love to connect and share my profile. Cheers, Amrit"
         else:
             note = f"Hi {first_name}, saw your recent hiring post. Would love to connect with fellow tech folks. Cheers, Amrit"
+
+    # Pre-send validation safeguard: recruiters/TA must NEVER receive an engineering-peer note
+    if detected_category == "agency_recruiter" or any(rm in f"{headline} {role_label}".lower() for rm in ["recruiter", "talent", "staffing", "human resources", "hr "]):
+        for forbidden in ("fellow backend", "fellow engineer", "fellow engineering", "your engineering work"):
+            if forbidden in note.lower():
+                logging.warning(f"[LinkedIn Outreach] Blocked inappropriate engineering note for recruiter/TA {first_name}: '{note}'")
+                target_co = f" at {company}" if company and company != "your company" else ""
+                note = f"Hi {first_name}, saw your focus on tech hiring{target_co}. As a Java/Cloud dev, would love to connect and stay on your radar. Cheers!"
+                break
 
     if len(note) > 180:
         note = note[:177] + "..."
@@ -1512,13 +1610,62 @@ def gather_outreach_candidates(page, config, ledger, conn_ledger, logs_dir, max_
                     continue
                 co_name = target.get('company_name', '').strip()
                 rec_hint = target.get('recruiter_hint', '').strip()
+                rec_title = target.get('recruiter_title', '').strip()
+                target_type = target.get('target_type', 'JOB_POSTER')
+                target_role = target.get('role', 'Software Engineer').strip()
+
                 if not co_name and not rec_hint:
                     continue
 
-                h_query = f'"{rec_hint}" "{co_name}"' if (rec_hint and co_name) else (f'"{co_name}" "Technical Recruiter"' if co_name else f'"{rec_hint}" Recruiter')
+                # Direct profile link handling (e.g. from LinkedIn 'Meet the hiring team')
+                direct_url = target.get("profile_url", "").strip()
+                if direct_url and "/in/" in direct_url and direct_url not in seen_urls:
+                    candidates.append({
+                        "profile_url": direct_url,
+                        "name": rec_hint or "Hiring Team",
+                        "headline": rec_title or f"Job Poster at {co_name}",
+                        "company": co_name,
+                        "role": target_role,
+                        "category": "job_poster",
+                        "source": "direct_job_poster",
+                        "source_key": target.get("id")
+                    })
+                    seen_urls.add(direct_url)
+                    target['status'] = 'HUNTED'
+                    with open(hunt_path, 'w', encoding='utf-8') as f_out:
+                        json.dump(hunt_data, f_out, indent=2)
+                    logging.info(f"[LinkedIn Outreach] 🎯 Sourced direct job poster lead: {direct_url} ({co_name})")
+                    continue
+
+                if target_type == "REFERRAL_HUNT":
+                    h_query = f'"{co_name}" "Software Engineer"'
+                    cand_cat = "referral_lead"
+                    cand_src = "referral_lead_hunt"
+                    cand_headline = f"Engineer at {co_name}"
+                elif target_type == "JOB_POSTER" or rec_hint:
+                    agency_hint = ""
+                    if " at " in rec_title:
+                        agency_hint = rec_title.split(" at ")[-1].strip()
+                    if rec_hint and agency_hint:
+                        h_query = f'"{rec_hint}" "{agency_hint}"'
+                    elif rec_hint and co_name:
+                        h_query = f'"{rec_hint}" "{co_name}"'
+                    elif rec_hint:
+                        h_query = f'"{rec_hint}" Recruiter'
+                    else:
+                        h_query = f'"{co_name}" "Technical Recruiter"'
+                    cand_cat = "job_poster"
+                    cand_src = "job_poster_hunt"
+                    cand_headline = f"Recruiter at {co_name}"
+                else:
+                    h_query = f'"{rec_hint}" "{co_name}"' if (rec_hint and co_name) else (f'"{co_name}" "Technical Recruiter"' if co_name else f'"{rec_hint}" Recruiter')
+                    cand_cat = "hiring_manager"
+                    cand_src = "screenshot_lead_hunt"
+                    cand_headline = f"Recruiter at {co_name}"
+
                 if page:
                     try:
-                        logging.info(f"[LinkedIn Outreach] Hunting recruiter from screenshot: {h_query}")
+                        logging.info(f"[LinkedIn Outreach] Hunting {cand_cat} lead: {h_query}")
                         encoded_h = urllib.parse.quote(h_query)
                         search_url = f"https://www.linkedin.com/search/results/people/?keywords={encoded_h}&origin=GLOBAL_SEARCH_HEADER"
                         page.goto(search_url, wait_until="domcontentloaded", timeout=25000)
@@ -1538,17 +1685,18 @@ def gather_outreach_candidates(page, config, ledger, conn_ledger, logs_dir, max_
                             candidates.append({
                                 "profile_url": h_clean,
                                 "name": h_text.split("•")[0].strip(),
-                                "headline": f"Recruiter at {co_name}",
+                                "headline": cand_headline,
                                 "company": co_name,
-                                "category": "hiring_manager",
-                                "source": "screenshot_lead_hunt",
+                                "role": target_role,
+                                "category": cand_cat,
+                                "source": cand_src,
                                 "source_key": target.get("id")
                             })
                             seen_urls.add(h_clean)
                             target['status'] = 'HUNTED'
                             with open(hunt_path, 'w', encoding='utf-8') as f_out:
                                 json.dump(hunt_data, f_out, indent=2)
-                            logging.info(f"[LinkedIn Outreach] 🎯 Sourced screenshot hunt lead: {h_clean} ({co_name})")
+                            logging.info(f"[LinkedIn Outreach] 🎯 Sourced {cand_cat} lead: {h_clean} ({co_name})")
                             break
                     except Exception as e:
                         logging.debug(f"[LinkedIn Outreach] Hunt search error for {h_query}: {e}")
@@ -1643,6 +1791,17 @@ def gather_outreach_candidates(page, config, ledger, conn_ledger, logs_dir, max_
                         if "• 1st" in link_text or "• 1st" in card_text or "· 1st" in card_text:
                             continue
 
+                        # Skip mutual connection links inside candidate cards
+                        is_mutual = False
+                        try:
+                            is_mutual = link.locator("xpath=./ancestor::*[contains(@class, 'insight') or contains(@class, 'mutual')]").count() > 0
+                        except Exception:
+                            pass
+                        if is_mutual or "mutual connection" in link_text.lower() or "other mutual" in link_text.lower():
+                            continue
+                        if f"{link_text} &" in card_text or f", {link_text}" in card_text or f"{link_text} are mutual" in card_text:
+                            continue
+
                         # Extract name and headline
                         combined_text = f"{link_text} {card_text}"
                         if not is_hiring_relevant(combined_text):
@@ -1678,8 +1837,8 @@ def gather_outreach_candidates(page, config, ledger, conn_ledger, logs_dir, max_
             if len(candidates) >= max_needed:
                 break
             try:
-                co_query = f'"{co}" ("Technical Recruiter" OR "Engineering Manager" OR "Talent Acquisition" OR "HR") India'
-                logging.info(f"[LinkedIn Outreach] Searching hiring managers at target company: {co}")
+                co_query = f'"{co}" ("Software Engineer" OR "Senior Software Engineer" OR "Tech Lead" OR "Engineering Manager" OR "Technical Recruiter") India'
+                logging.info(f"[LinkedIn Outreach] Searching engineers & managers at target company: {co}")
                 encoded_co = urllib.parse.quote(co_query)
                 search_url = f"https://www.linkedin.com/search/results/people/?keywords={encoded_co}&origin=GLOBAL_SEARCH_HEADER"
                 page.goto(search_url, wait_until="domcontentloaded", timeout=30000)
@@ -1711,8 +1870,22 @@ def gather_outreach_candidates(page, config, ledger, conn_ledger, logs_dir, max_
                         if "• 1st" in link_text or "• 1st" in card_text or "· 1st" in card_text:
                             continue
 
+                        # Skip mutual connection links inside candidate cards
+                        is_mutual = False
+                        try:
+                            is_mutual = link.locator("xpath=./ancestor::*[contains(@class, 'insight') or contains(@class, 'mutual')]").count() > 0
+                        except Exception:
+                            pass
+                        if is_mutual or "mutual connection" in link_text.lower() or "other mutual" in link_text.lower():
+                            continue
+                        if f"{link_text} &" in card_text or f", {link_text}" in card_text or f"{link_text} are mutual" in card_text:
+                            continue
+
                         combined_text = f"{link_text} {card_text}"
-                        if not is_hiring_relevant(combined_text):
+                        cand_cat = classify_candidate_category(card_text, "", co, link_text)
+                        if cand_cat == "referral_lead":
+                            pass
+                        elif not is_hiring_relevant(combined_text):
                             continue
 
                         name_cand = link_text.split("•")[0].strip()
@@ -1725,11 +1898,11 @@ def gather_outreach_candidates(page, config, ledger, conn_ledger, logs_dir, max_
                             "name": name_cand,
                             "headline": card_text if card_text else link_text,
                             "company": co,
-                            "category": "hiring_manager",
+                            "category": cand_cat,
                             "source": f"target_company:{co}"
                         })
                         seen_urls.add(clean_url)
-                        logging.info(f"[LinkedIn Outreach] 🎯 Sourced target company manager: '{name_cand}' at '{co}' — {clean_url}")
+                        logging.info(f"[LinkedIn Outreach] 🎯 Sourced target company {cand_cat}: '{name_cand}' at '{co}' — {clean_url}")
                     except Exception:
                         pass
             except Exception as e:
@@ -1978,6 +2151,7 @@ def send_linkedin_connection(page, candidate, note, config, conn_ledger, logs_di
         "name": candidate.get("name"),
         "headline": candidate.get("headline"),
         "company": candidate.get("company"),
+        "role": candidate.get("role", "Software Engineer"),
         "category": candidate.get("category"),
         "status": "INVITED",
         "note_sent": note_to_record if note_sent else "[SENT_WITHOUT_NOTE]",
@@ -2141,9 +2315,27 @@ def check_and_message_accepted_connections(context, page, config, conn_ledger, l
         first_name = name.split()[0] if name else "there"
         company = info.get("company") or "your organization"
         category = info.get("category", "default")
+        headline = info.get("headline", "")
+        role_name = info.get("role", "software engineering")
+
+        # Runtime validation: prevent sending engineering templates to recruiters/talent acquisition
+        detected_cat = classify_candidate_category(headline, role_name, company)
+        if detected_cat == "agency_recruiter":
+            category = "agency_recruiter"
+        elif category not in ("agency_recruiter", "hiring_manager", "job_poster", "referral_lead"):
+            category = detected_cat
 
         tmpl = templates.get(category) or templates.get("default") or "Hi {first_name}, thanks for connecting! Looking forward to staying in touch."
-        msg_text = tmpl.replace("{first_name}", first_name).replace("{company}", company)
+        msg_text = tmpl.replace("{first_name}", first_name).replace("{company}", company).replace("{role}", role_name)
+
+        # Safety assertion: if candidate is a recruiter/TA, ensure msg_text does not contain peer engineer phrases
+        if detected_cat == "agency_recruiter":
+            for forbidden in ("fellow engineering", "fellow engineer", "fellow backend", "engineering leadership"):
+                if forbidden in msg_text.lower():
+                    logging.warning(f"[LinkedIn Welcome] Overriding inappropriate template for recruiter {first_name}")
+                    tmpl = templates.get("agency_recruiter") or templates.get("default")
+                    msg_text = tmpl.replace("{first_name}", first_name).replace("{company}", company).replace("{role}", role_name)
+                    break
 
         logging.info(f"[LinkedIn Welcome] Preparing message for {name} ({profile_url}):\n'{msg_text[:80]}...'")
 

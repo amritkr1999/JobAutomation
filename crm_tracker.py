@@ -15,12 +15,17 @@ BASE_DIR = os.path.expanduser('~/Documents/JobAutomation')
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 CRM_FILE = os.path.join(LOGS_DIR, 'recruiter_crm.json')
 SENT_EMAILS_FILE = os.path.join(LOGS_DIR, 'sent_emails.json')
+SUPPRESSION_FILE = os.path.join(LOGS_DIR, 'suppression_list.json')
+COLD_QUEUE_FILE = os.path.join(LOGS_DIR, 'cold_email_queue.json')
+DRAFTS_FILE = os.path.join(LOGS_DIR, 'pending_reply_drafts.json')
+TASKS_FILE = os.path.join(LOGS_DIR, 'tasks.json')
 
 # Standardized Recruiter Pipeline Stages
 VALID_STAGES = [
     "DISCOVERED",
     "OUTREACH_SENT",
     "REPLIED",
+    "REFERRAL_REQUIRED",
     "SCREENING_REQUESTED",
     "LINK_RECEIVED",
     "APPLIED_VIA_LINK",
@@ -30,6 +35,25 @@ VALID_STAGES = [
     "REJECTED",
     "GHOSTED"
 ]
+
+# Validation Regex & Noise Exclusions
+EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$')
+CORRUPT_SUFFIX_REGEX = re.compile(
+    r'\.(?:com|org|net|in|io|ai|co|sa|ae|uk)\.(?:please|pay|thanks|roles|modmed|contact|chargepoint|is|email)$',
+    re.IGNORECASE
+)
+
+IGNORED_CRM_NOISE_REGEX = re.compile(
+    r'(?i)(postmaster|mailer-daemon|no-?reply|donotreply|do-not-reply|notifications?|alerts?|updates?|newsletters?|'
+    r'marketing|promotions?|digest|mailer@|jobmessenger@|indeedapply@|jobs\.shine\.com|'
+    r'shine\.com|monsterindia\.com|indeed\.com|naukri\.com|glassdoor\.com|'
+    r'invitations@linkedin\.com|jobalerts-noreply@linkedin\.com|alert@naukri\.com|'
+    r'messages-noreply@linkedin\.com|engage@indeed\.com|substack\.com|'
+    r'flyai\.airindia\.com|em\.linkedin\.com|hello\.stackoverflow\.email|talent500\.co|'
+    r'amazon\.in|hdfcbank|cdslstatement|grammarly|ambitionbox|remotehunter|'
+    r'opportunities@foundit\.in|myworkday\.com|talent\.icims\.com|ppfas\.com|'
+    r'team@hi\.wellfound\.com|accommodationrequests@maersk\.com)'
+)
 
 
 def normalize_email(email_str: str) -> str:
@@ -47,6 +71,82 @@ def normalize_email(email_str: str) -> str:
             domain = 'gmail.com'
         return f"{local}@{domain}".lower()
     return em.lower()
+
+
+def load_suppression_data() -> dict:
+    """Load suppression data safely from disk."""
+    if os.path.exists(SUPPRESSION_FILE):
+        try:
+            with open(SUPPRESSION_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+        except Exception as e:
+            logging.debug(f"[CRM] Suppression file read error: {e}")
+    return {"suppressed_emails": {}, "suppressed_domains": {}}
+
+
+def load_sent_records() -> dict:
+    """Load sent emails record safely from disk."""
+    if os.path.exists(SENT_EMAILS_FILE):
+        try:
+            with open(SENT_EMAILS_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+        except Exception as e:
+            logging.debug(f"[CRM] Sent emails file read error: {e}")
+    return {}
+
+
+def is_valid_recruiter_email(email_str: str) -> bool:
+    """Validate that email is syntactically sound and not a known noise / corrupt address."""
+    if not email_str or not isinstance(email_str, str):
+        return False
+    em = email_str.strip().lower()
+    if not EMAIL_REGEX.match(em):
+        return False
+    if '..' in em or em.endswith('.'):
+        return False
+    if CORRUPT_SUFFIX_REGEX.search(em):
+        return False
+    # Exception: allow legitimate company career/talent/people no-reply notices (e.g. careers-noreply@zomato.com)
+    if re.search(r'(?i)(careers|talent|hiring|recruiting|people|jobs).*no-?reply', em):
+        return True
+    if IGNORED_CRM_NOISE_REGEX.search(em):
+        return False
+    return True
+
+
+def is_suppressed_or_bounced(email_str: str, supp_data: dict = None, sent_records: dict = None) -> tuple:
+    """Check if email or its domain is suppressed or has a BOUNCED status."""
+    norm = normalize_email(email_str)
+    raw = email_str.strip().lower()
+
+    if supp_data is None:
+        supp_data = load_suppression_data()
+    if sent_records is None:
+        sent_records = load_sent_records()
+
+    # Generate dot-stripped variant for cross-domain bounce correlation
+    local_part, domain = norm.split('@', 1) if '@' in norm else (norm, '')
+    nodot = f"{local_part.replace('.', '')}@{domain}".lower() if domain else norm
+
+    supp_emails = supp_data.get("suppressed_emails", {})
+    for candidate in (norm, raw, nodot):
+        if candidate in supp_emails:
+            return True, f"SUPPRESSED_EMAIL ({supp_emails[candidate].get('reason', 'BLOCKED')})"
+
+    supp_domains = supp_data.get("suppressed_domains", {})
+    if domain and domain in supp_domains and domain not in ('gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'):
+        return True, f"SUPPRESSED_DOMAIN (@{domain})"
+
+    for candidate in (norm, raw, nodot):
+        if candidate in sent_records and isinstance(sent_records[candidate], dict):
+            if sent_records[candidate].get("status") == "BOUNCED":
+                return True, "BOUNCED_IN_SENT_RECORDS"
+
+    return False, ""
 
 
 def load_crm() -> dict:
@@ -88,55 +188,75 @@ def save_crm(crm_data: dict) -> bool:
 
 
 def _bootstrap_from_sent_emails(crm_data: dict) -> dict:
-    """Seed CRM with historical outreach and recruiter replies from sent_emails.json."""
+    """Seed CRM with historical outreach and recruiter replies from sent_emails.json, excluding bounced/suppressed/invalid/noise leads."""
     if not os.path.exists(SENT_EMAILS_FILE):
         return crm_data
 
-    try:
-        with open(SENT_EMAILS_FILE, 'r', encoding='utf-8') as f:
-            sent_records = json.load(f)
-    except Exception:
+    sent_records = load_sent_records()
+    if not sent_records:
         return crm_data
+
+    supp_data = load_suppression_data()
 
     modified = False
     threads = crm_data.setdefault("threads", {})
 
     for norm_email, rec in sent_records.items():
-        if norm_email not in threads:
-            is_replied = rec.get("outcome") == "REPLIED"
-            stage = "REPLIED" if is_replied else "OUTREACH_SENT"
+        if norm_email in threads:
+            continue
 
-            timeline = [
-                {
-                    "timestamp": rec.get("sent_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-                    "action": "OUTREACH_SENT",
-                    "summary": f"Sent cold application for {rec.get('job_title', 'Role')} at {rec.get('company', 'Company')}."
-                }
-            ]
-            if is_replied:
-                timeline.append({
-                    "timestamp": rec.get("replied_at", rec.get("sent_at", "")),
-                    "action": "REPLY_RECEIVED",
-                    "summary": "Recruiter replied to outreach email."
-                })
+        raw_email = rec.get("raw_email", norm_email)
 
-            threads[norm_email] = {
-                "recruiter_name": rec.get("recruiter_name", ""),
-                "company": rec.get("company", "Company"),
-                "role": rec.get("job_title", "Software Engineer"),
-                "contact_email": norm_email,
-                "raw_email": rec.get("raw_email", norm_email),
-                "source_channel": "COLD_EMAIL",
-                "stage": stage,
-                "sentiment": "NEUTRAL" if not is_replied else "POSITIVE",
-                "thread_message_ids": [],
-                "created_at": rec.get("sent_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-                "last_interaction": rec.get("replied_at") or rec.get("sent_at", ""),
-                "timeline": timeline,
-                "extracted_links": [],
-                "notes": []
+        # 1. Skip hard bounced emails in sent_records
+        if rec.get("status") == "BOUNCED":
+            continue
+
+        # 2. Skip suppressed emails or domains
+        is_supp, _ = is_suppressed_or_bounced(norm_email, supp_data, sent_records)
+        if is_supp:
+            continue
+        is_supp_raw, _ = is_suppressed_or_bounced(raw_email, supp_data, sent_records)
+        if is_supp_raw:
+            continue
+
+        # 3. Skip invalid, corrupted, or non-HR noise emails
+        if not is_valid_recruiter_email(norm_email) or not is_valid_recruiter_email(raw_email):
+            continue
+
+        is_replied = rec.get("outcome") == "REPLIED"
+        stage = "REPLIED" if is_replied else "OUTREACH_SENT"
+
+        timeline = [
+            {
+                "timestamp": rec.get("sent_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                "action": "OUTREACH_SENT",
+                "summary": f"Sent cold application for {rec.get('job_title', 'Role')} at {rec.get('company', 'Company')}."
             }
-            modified = True
+        ]
+        if is_replied:
+            timeline.append({
+                "timestamp": rec.get("replied_at", rec.get("sent_at", "")),
+                "action": "REPLY_RECEIVED",
+                "summary": "Recruiter replied to outreach email."
+            })
+
+        threads[norm_email] = {
+            "recruiter_name": rec.get("recruiter_name", ""),
+            "company": rec.get("company", "Company"),
+            "role": rec.get("job_title", "Software Engineer"),
+            "contact_email": norm_email,
+            "raw_email": raw_email,
+            "source_channel": "COLD_EMAIL",
+            "stage": stage,
+            "sentiment": "NEUTRAL" if not is_replied else "POSITIVE",
+            "thread_message_ids": [],
+            "created_at": rec.get("sent_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+            "last_interaction": rec.get("replied_at") or rec.get("sent_at", ""),
+            "timeline": timeline,
+            "extracted_links": [],
+            "notes": []
+        }
+        modified = True
 
     if modified:
         save_crm(crm_data)
@@ -144,9 +264,192 @@ def _bootstrap_from_sent_emails(crm_data: dict) -> dict:
     return crm_data
 
 
+def delete_contact(email: str, reason: str = "") -> bool:
+    """
+    Safely delete a recruiter contact from CRM threads.
+    Matches normalized key, raw email, or contact email.
+    """
+    if not email:
+        return False
+    norm = normalize_email(email)
+    raw = email.strip().lower()
+    crm = load_crm()
+    threads = crm.get("threads", {})
+
+    deleted = False
+    keys_to_remove = []
+    for k, v in threads.items():
+        k_lower = k.lower()
+        c_email = v.get("contact_email", "").strip().lower()
+        r_email = v.get("raw_email", "").strip().lower()
+        if k_lower in (norm, raw) or c_email in (norm, raw) or r_email in (norm, raw):
+            keys_to_remove.append(k)
+
+    for k in set(keys_to_remove):
+        del threads[k]
+        deleted = True
+        logging.info(f"[CRM] 🗑️ Deleted contact '{k}' from CRM. Reason: {reason or 'MANUAL_DELETION'}")
+
+    if deleted:
+        save_crm(crm)
+        _clean_orphan_drafts_and_tasks({norm, raw})
+    return deleted
+
+
+def _clean_orphan_drafts_and_tasks(purged_emails: set):
+    """Cancel or clean up pending drafts, tasks, and cold queues for deleted emails."""
+    if not purged_emails:
+        return
+
+    purged_lower = {e.lower() for e in purged_emails if e}
+
+    # 1. Clean pending_reply_drafts.json
+    if os.path.exists(DRAFTS_FILE):
+        try:
+            with open(DRAFTS_FILE, 'r', encoding='utf-8') as f:
+                drafts_obj = json.load(f)
+            drafts_dict = drafts_obj.get("drafts", {})
+            changed_drafts = False
+            for did, dinfo in drafts_dict.items():
+                r_em = dinfo.get("recruiter_email", "").strip().lower()
+                norm_r = normalize_email(r_em)
+                if r_em in purged_lower or norm_r in purged_lower:
+                    if dinfo.get("status") not in ("CANCELLED", "DISMISSED"):
+                        dinfo["status"] = "CANCELLED"
+                        dinfo["cancelled_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        dinfo["cancel_reason"] = "Recruiter email deleted from CRM / not working"
+                        changed_drafts = True
+            if changed_drafts:
+                with open(DRAFTS_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(drafts_obj, f, indent=2)
+        except Exception as e:
+            logging.debug(f"[CRM] Draft cleanup note: {e}")
+
+    # 2. Clean tasks.json
+    if os.path.exists(TASKS_FILE):
+        try:
+            with open(TASKS_FILE, 'r', encoding='utf-8') as f:
+                tasks_obj = json.load(f)
+            tasks_dict = tasks_obj.get("tasks", {})
+            changed_tasks = False
+            for tid, tinfo in tasks_dict.items():
+                r_em = tinfo.get("recruiter_email", "").strip().lower()
+                norm_r = normalize_email(r_em)
+                if r_em in purged_lower or norm_r in purged_lower:
+                    if tinfo.get("status") not in ("COMPLETED", "DISMISSED"):
+                        tinfo["status"] = "DISMISSED"
+                        tinfo["dismissed_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        tinfo["notes"] = "Auto-dismissed: contact deleted as not working"
+                        changed_tasks = True
+            if changed_tasks:
+                with open(TASKS_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(tasks_obj, f, indent=2)
+        except Exception as e:
+            logging.debug(f"[CRM] Task cleanup note: {e}")
+
+    # 3. Clean cold_email_queue.json
+    if os.path.exists(COLD_QUEUE_FILE):
+        try:
+            with open(COLD_QUEUE_FILE, 'r', encoding='utf-8') as f:
+                cqueue = json.load(f)
+            if isinstance(cqueue, list):
+                new_q = []
+                for item in cqueue:
+                    em = item.get("email", "").strip().lower()
+                    if em not in purged_lower and normalize_email(em) not in purged_lower:
+                        new_q.append(item)
+                if len(new_q) != len(cqueue):
+                    with open(COLD_QUEUE_FILE, 'w', encoding='utf-8') as f:
+                        json.dump(new_q, f, indent=2)
+        except Exception as e:
+            logging.debug(f"[CRM] Cold queue cleanup note: {e}")
+
+
+def purge_not_working_emails() -> dict:
+    """
+    Scan CRM database and permanently delete all:
+      1. Hard bounced emails (from sent_emails and suppression_list)
+      2. Globally suppressed emails and domains
+      3. Corrupted OCR / invalid syntax email addresses
+      4. Automated transactional / non-recruiter noise emails
+    Also cleans up pending drafts and task queues for purged emails.
+    """
+    crm = load_crm()
+    threads = crm.get("threads", {})
+    supp_data = load_suppression_data()
+    sent_records = load_sent_records()
+
+    initial_count = len(threads)
+    to_delete = {}
+
+    for norm_email, data in list(threads.items()):
+        raw_email = data.get("raw_email", norm_email)
+        reasons = []
+
+        # Check suppression or bounce
+        is_supp, supp_reason = is_suppressed_or_bounced(norm_email, supp_data, sent_records)
+        if not is_supp:
+            is_supp, supp_reason = is_suppressed_or_bounced(raw_email, supp_data, sent_records)
+        if is_supp:
+            reasons.append(supp_reason)
+
+        # Check syntax, corrupt TLD, and noise
+        if not is_valid_recruiter_email(norm_email) or not is_valid_recruiter_email(raw_email):
+            if CORRUPT_SUFFIX_REGEX.search(norm_email) or CORRUPT_SUFFIX_REGEX.search(raw_email):
+                reasons.append("CORRUPTED_TLD_ARTIFACT")
+            elif IGNORED_CRM_NOISE_REGEX.search(norm_email) or IGNORED_CRM_NOISE_REGEX.search(raw_email):
+                reasons.append("AUTOMATED_NON_HR_NOISE")
+            elif not EMAIL_REGEX.match(norm_email) or not EMAIL_REGEX.match(raw_email):
+                reasons.append("INVALID_SYNTAX")
+            elif ".." in norm_email or ".." in raw_email:
+                reasons.append("DOUBLE_DOT")
+
+        if reasons:
+            to_delete[norm_email] = {
+                "raw_email": raw_email,
+                "company": data.get("company", "Unknown"),
+                "role": data.get("role", "Unknown"),
+                "reasons": reasons,
+                "stage": data.get("stage", "UNKNOWN")
+            }
+
+    purged_count = 0
+    all_purged_addrs = set()
+    for norm_email, details in to_delete.items():
+        if norm_email in threads:
+            del threads[norm_email]
+            purged_count += 1
+            all_purged_addrs.add(norm_email)
+            if details.get("raw_email"):
+                all_purged_addrs.add(details["raw_email"].lower())
+            logging.info(f"[CRM] 🗑️ Purged not-working contact: {norm_email} ({details['company']}) — {', '.join(details['reasons'])}")
+
+    if purged_count > 0:
+        save_crm(crm)
+
+    # Clean up associated drafts, tasks, and queues
+    _clean_orphan_drafts_and_tasks(all_purged_addrs)
+
+    return {
+        "initial_contacts": initial_count,
+        "purged_count": purged_count,
+        "remaining_contacts": len(threads),
+        "purged": to_delete
+    }
+
+
 def record_outreach(email: str, company: str, role: str, recruiter_name: str = "",
                     source_channel: str = "COLD_EMAIL", metadata: dict = None) -> dict:
     """Record a newly dispatched outreach in CRM."""
+    if not is_valid_recruiter_email(email):
+        logging.warning(f"[CRM] Skipping outreach recording: invalid or noise address '{email}'.")
+        return {}
+
+    is_supp, reason = is_suppressed_or_bounced(email)
+    if is_supp:
+        logging.warning(f"[CRM] Skipping outreach recording: '{email}' is {reason}.")
+        return {}
+
     norm = normalize_email(email)
     crm = load_crm()
     threads = crm.setdefault("threads", {})
@@ -195,6 +498,15 @@ def record_incoming_message(email: str, subject: str, body_snippet: str, message
                             intent: str = "GENERAL_INQUIRY", sentiment: str = "POSITIVE",
                             links: list = None) -> dict:
     """Record an incoming recruiter email, updating the CRM stage, links, and timeline."""
+    if not is_valid_recruiter_email(email):
+        logging.warning(f"[CRM] Skipping incoming recording: invalid or noise address '{email}'.")
+        return {}
+
+    is_supp, reason = is_suppressed_or_bounced(email)
+    if is_supp:
+        logging.warning(f"[CRM] Skipping incoming recording: '{email}' is {reason}.")
+        return {}
+
     norm = normalize_email(email)
     crm = load_crm()
     threads = crm.setdefault("threads", {})
@@ -236,6 +548,8 @@ def record_incoming_message(email: str, subject: str, body_snippet: str, message
         entry["stage"] = "TECH_ASSESSMENT"
     elif intent in ("REJECTION", "REJECT"):
         entry["stage"] = "REJECTED"
+    elif intent == "REFERRAL_ONLY_POLICY":
+        entry["stage"] = "REFERRAL_REQUIRED"
     else:
         entry["stage"] = "REPLIED"
 
@@ -433,5 +747,26 @@ def print_crm_table(limit: int = 30, filter_stage: str = None):
 
 if __name__ == "__main__":
     import sys
-    stage_arg = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith("--") else None
-    print_crm_table(filter_stage=stage_arg)
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+
+    if "--purge" in sys.argv:
+        print("\n" + "=" * 70)
+        print("🧹 PURGING NOT-WORKING / BOUNCED / NOISE RECRUITER CONTACTS")
+        print("=" * 70)
+        res = purge_not_working_emails()
+        print(f"• Initial Contacts:   {res['initial_contacts']}")
+        print(f"• Purged Contacts:    {res['purged_count']}")
+        print(f"• Remaining Contacts: {res['remaining_contacts']}")
+        print("=" * 70)
+        print_crm_table(limit=30)
+    elif "--delete" in sys.argv:
+        idx = sys.argv.index("--delete")
+        if idx + 1 < len(sys.argv):
+            target_em = sys.argv[idx + 1]
+            ok = delete_contact(target_em, reason="CLI_MANUAL_DELETE")
+            print(f"Deleted contact {target_em}: {ok}")
+        else:
+            print("Usage: python3 crm_tracker.py --delete <email>")
+    else:
+        stage_arg = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith("--") else None
+        print_crm_table(filter_stage=stage_arg)

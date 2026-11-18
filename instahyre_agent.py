@@ -325,6 +325,42 @@ def close_any_instahyre_modal(page):
         logging.debug(f"[Instahyre] Modal close helper note: {e}")
 
 
+def extract_instahyre_recruiter_details(page, modal=None) -> tuple:
+    """
+    Extracts 'Posted by [Name]' and recruiter title/agency from Instahyre DOM.
+    Returns: (recruiter_name, recruiter_title)
+    """
+    targets = [modal, page] if modal else [page]
+    for container in targets:
+        if not container:
+            continue
+        try:
+            locs = container.locator("//*[contains(text(), 'Posted by')]").all()
+            for loc in locs:
+                txt = (loc.inner_text(timeout=400) or "").strip()
+                parent_txt = ""
+                try:
+                    parent_txt = (loc.locator("xpath=..").inner_text(timeout=400) or "").strip()
+                except Exception:
+                    pass
+                combined = parent_txt if len(parent_txt) > len(txt) else txt
+
+                match = re.search(r'Posted by\s+([^\n\r,]+)', combined, re.IGNORECASE)
+                if match:
+                    r_name = match.group(1).strip()
+                    if len(r_name) > 2 and "instahyre" not in r_name.lower():
+                        lines = [line.strip() for line in combined.splitlines() if line.strip()]
+                        r_title = ""
+                        for idx_l, line in enumerate(lines):
+                            if "posted by" in line.lower() and idx_l + 1 < len(lines):
+                                r_title = lines[idx_l + 1]
+                                break
+                        return r_name, r_title
+        except Exception:
+            pass
+    return "", ""
+
+
 def find_active_instahyre_modal(page, timeout_ms=5000):
     """
     Directly scopes element selection to the currently active job modal dialog.
@@ -504,6 +540,24 @@ def run_instahyre_auto_apply(context, page, config, ledger, logs_dir, max_applie
             if not job_identifier or len(job_identifier) < 3:
                 job_identifier = f"instahyre_opp_{idx+1}"
 
+            # Universally harvest Job Poster & queue Employee Referral Hunt
+            rec_name, rec_title = "", ""
+            try:
+                import intent_miner
+                br_res = intent_miner.bridge_job_poster_and_referral(
+                    page=page,
+                    company=modal_company,
+                    role=modal_title,
+                    platform_name="instahyre",
+                    modal_or_container=modal,
+                    logs_dir=logs_dir
+                )
+                if br_res.get("job_poster"):
+                    rec_name = br_res["job_poster"].get("recruiter_hint", "")
+                    rec_title = br_res["job_poster"].get("recruiter_title", "")
+            except Exception as ex:
+                logging.debug(f"[Instahyre] Poster/referral bridge note: {ex}")
+
             if job_identifier in applied_ledger:
                 logging.info(f"[Instahyre] Already in ledger: '{job_identifier}'. Closing modal.")
                 close_any_instahyre_modal(page)
@@ -616,6 +670,8 @@ def run_instahyre_auto_apply(context, page, config, ledger, logs_dir, max_applie
             applied_ledger[job_identifier] = {
                 "title": modal_title or "Full Stack Developer",
                 "company": modal_company or "Opportunity",
+                "recruiter_name": rec_name,
+                "recruiter_title": rec_title,
                 "applied_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "status": "APPLIED"
             }

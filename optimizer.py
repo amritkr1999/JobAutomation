@@ -633,6 +633,18 @@ def evolve_search_queries(config, logs_dir=LOGS_DIR, dry_run=False):
     genetic_candidates = synthesize_genetic_mutations(champion_strings, top_tech, top_triggers, count=8)
     fresh_candidates = llm_candidates + [g for g in genetic_candidates if g not in llm_candidates]
 
+    # Incorporate high-intent search queries harvested from Instagram reels
+    reel_search_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'reel_strategies', 'search_strategies.json')
+    if os.path.exists(reel_search_file):
+        try:
+            with open(reel_search_file, 'r', encoding='utf-8') as f:
+                r_search = json.load(f)
+            for rq in r_search.get("boolean_queries", []):
+                if rq and rq not in fresh_candidates:
+                    fresh_candidates.insert(0, rq)
+        except Exception:
+            pass
+
     # Assemble evolved query pool (Target: 6 prioritized queries)
     # 1. Keep top proven champions (up to 3)
     evolved_pool = champion_strings[:3]
@@ -755,8 +767,16 @@ def tune_domain_suppression(logs_dir=LOGS_DIR):
                 domain = email_addr.split('@')[-1].lower()
                 domain_bounces[domain] += 1
 
+    GENERIC_PUBLIC_DOMAINS = {
+        'gmail.com', 'googlemail.com', 'yahoo.com', 'outlook.com',
+        'hotmail.com', 'icloud.com', 'live.com', 'aol.com', 'mail.com',
+        'protonmail.com', 'proton.me'
+    }
+
     suppressed_count = 0
     for dom, b_count in domain_bounces.items():
+        if dom in GENERIC_PUBLIC_DOMAINS:
+            continue
         if b_count >= 2 and dom not in supp_data["suppressed_domains"]:
             supp_data["suppressed_domains"][dom] = {
                 "reason": "HIGH_BOUNCE_RATE_AUTO_TUNED",

@@ -475,9 +475,11 @@ graph TD
 - **Dynamic User Intent & Persona Engine ([`logs/user_intent_profile.json`](file:///Users/amrit/Documents/JobAutomation/logs/user_intent_profile.json))**:
   - Recomputes candidate preference profiles using exponential temporal decay (half-life of 21 days), ensuring recently screenshotted skills carry the highest search weight.
   - Clusters target jobs into distinct **Personas** (e.g. *Java Microservices & Cloud Architect*, *Full Stack Java + React Specialist*, *Python FastAPI & Cloud Backend*).
-- **No-Email Screenshot Lead Hunt Queue ([`logs/lead_hunt_queue.json`](file:///Users/amrit/Documents/JobAutomation/logs/lead_hunt_queue.json))**:
-  - Screenshots that lack direct email addresses (e.g., "DM me on LinkedIn" or career portal app cards) are no longer dropped or ignored.
-  - Queued into `lead_hunt_queue.json` so [`linkedin_agent.py`](file:///Users/amrit/Documents/JobAutomation/linkedin_agent.py) automatically hunts for the recruiter or company on LinkedIn and initiates connection outreach!
+- **Autonomous Universal Lead Hunt & Referral Engine ([`logs/lead_hunt_queue.json`](file:///Users/amrit/Documents/JobAutomation/logs/lead_hunt_queue.json))**:
+  - **Universal Employee Referral Hunt (Every Hiring Company)**: Whenever ANY company is discovered hiring across ANY platform (LinkedIn, Naukri, Instahyre, Indeed, Wellfound, Foundit, Greenhouse, Workday, or Dropzone), the system automatically queues a `REFERRAL_HUNT` lead. [`linkedin_agent.py`](file:///Users/amrit/Documents/JobAutomation/linkedin_agent.py) proactively reaches out to **Software Engineers, Tech Leads, and Engineering Managers** working at that company to request a warm employee referral.
+  - **Universal Job Poster Hunter (All Platforms)**: On LinkedIn ("Meet the hiring team"), Instahyre ("Posted by"), Naukri ("Recruiter Details"), Indeed, and Wellfound, the system automatically scrapes whoever published the job (including direct LinkedIn profile URLs). It queues a `JOB_POSTER` target for direct LinkedIn outreach referencing the exact role.
+  - **Referral-Only Policy Pivot (Zomato/Eternal Loop)**: When an inbound email states that applications are strictly accepted via employee referrals, [`recruiter_harvester.py`](file:///Users/amrit/Documents/JobAutomation/recruiter_harvester.py) classifies this as `REFERRAL_ONLY_POLICY`, sets the CRM stage to `REFERRAL_REQUIRED`, suppresses futile cold email retries, and queues high-priority referral outreach.
+  - **Precision Hunter & Note Engine**: Dispatches tailored, casual connection notes under 180 characters (`referral_lead` vs. `job_poster`), followed by context-aware post-acceptance follow-up messages upon acceptance!
 - **Continuous Market Vocabulary & Keyword Mining**: Analyzes every applied JD, recruiter reply, harvested post, and screenshot to index high-frequency skills into [`logs/discovered_keywords.json`](file:///Users/amrit/Documents/JobAutomation/logs/discovered_keywords.json).
 - **Persona-Based Compound Boolean Query Evolution**:
   - Dynamically synthesizes layered compound Boolean recruiter search queries (e.g., `("hiring" OR "urgent requirement") ("Java 21" OR "Spring Boot 3") ("Kafka" OR "Microservices") email`) managed by a Multi-Armed Bandit (MAB) with Thompson Sampling.
@@ -496,6 +498,12 @@ graph TD
 - **Automated ATS Compatibility & Keyword Gap Auditing**: Evaluates keyword presence across the header, summary, skills, experience, and projects sections, outputting a quantifiable match score ($0-100\%$) and missing keyword alerts (`--score`).
 - **Dynamic Portal & ATS Integration**: Greenhouse, Workday, and Google/Microsoft Forms extract job titles and descriptions live from the DOM and compile on-the-fly tailored 1-page resumes via `ats_bridge.resolve_tailored_resume_for_ats`.
 - **Guaranteed 1-Page ATS PDF Compiler**: Dynamic auto-budgeting algorithm recalculates typography and spacing on the fly so the resume never spills onto an awkward second page.
+- **Multi-Track Adaptive Profile Targeting**: Built-in intelligence for 5 distinct career tracks:
+  - *Full Stack / Backend Software Engineer* (Java 21, Spring Boot 3, Microservices, Python FastAPI, React 19)
+  - *Forward Deployed Engineer (FDE / Solutions Engineer)* (Enterprise integrations, client architecture, rapid POC/MVP, cloud data pipelines)
+  - *Technical Project Manager (TPM / Scrum Master)* (Agile sprint governance, Jira/Linear, cross-squad alignment, release management)
+  - *Data Analyst* (PostgreSQL/SQL query tuning, BI reporting, automated ETL)
+  - *Data Scientist / Applied ML* (NLP, embeddings, document extraction, model evaluation)
 - **Instant macOS Preview & Finder**: Automatically pops open the freshly generated PDF in macOS Preview (`open`) and reveals it in Finder for instant email/WhatsApp dispatch.
 - **Triple-Interface Flexibility**: Supports instant terminal one-liners, an interactive step-by-step CLI wizard, and a browser-based local Web UI editor (`--web`).
 
@@ -610,6 +618,67 @@ graph TD
   - **Terminal Weekly Analytics**: `python3 run_all.py --weekly-status` or `python3 system_diagnostics.py --weekly`.
   - **Real-time Web Dashboard**: Integrated into Mission Control at `http://localhost:8765` via live telemetry endpoints (`/api/diagnostics/live`, `/api/diagnostics/weekly`).
   - **Telegram Bot Remote Commands**: On-demand mobile diagnostic queries via `/health`, `/bottlenecks`, and `/weekly`.
+
+---
+
+### U. Autonomous Reel Knowledge Ingestion & System Adaptation Engine ([`reel_knowledge_agent.py`](file:///Users/amrit/Documents/JobAutomation/reel_knowledge_agent.py))
+
+A self-improving meta-learning pipeline that harvests career advice, resume optimization hacks, cold email frameworks, and hidden job discovery tactics from **Instagram Reels**, **YouTube Shorts**, and **WhatsApp video clips**, automatically transcribing them and modifying the system's operational templates and rules.
+
+```mermaid
+graph TD
+    subgraph Reel Ingestion Sources
+        IG[Instagram Reel URL] --> Downloader[yt-dlp / Direct Stream Downloader]
+        YT[YouTube Shorts URL] --> Downloader
+        WA[WhatsApp / Mobile Video Upload] --> LocalMedia[dropzone/reels/ File Watcher]
+        TGShare[Mobile Share to Telegram @mac_job_bot] --> BotReceiver[Telegram Bot Ingestion]
+        DirectNotes[Dashboard Text Input] --> TextParser[Direct Transcript Ingestion]
+    end
+
+    subgraph Processing Pipeline
+        Downloader --> |ffmpeg 16kHz mono| AudioWav[Isolated Audio WAV]
+        Downloader --> |ffmpeg Keyframe Extractor| VideoFrames[Sampled Video Frames]
+        LocalMedia --> |ffmpeg 16kHz mono| AudioWav
+        LocalMedia --> |ffmpeg Keyframe Extractor| VideoFrames
+        BotReceiver --> Downloader
+        AudioWav --> Transcriber[Cloud Whisper / Local Whisper / Gemini API]
+        VideoFrames --> OCR[Tesseract 5.5 OCR Engine]
+        Transcriber --> MultimodalFusion[Multimodal Context Synthesizer]
+        OCR --> MultimodalFusion
+        TextParser --> MultimodalFusion
+        MultimodalFusion --> LLMBrain[Ollama LLM llama3.1:8b Semantic Categorizer]
+    end
+
+    subgraph Automated System Adaptations
+        LLMBrain --> |High-converting subjects & pitch hooks| ColdStrat[cold_email_agent.py & cold_email_strategies.json]
+        LLMBrain --> |Google XYZ formulas & ATS layout rules| ResumeStrat[resume_editor.py, optimizer.py & resume_strategies.json]
+        LLMBrain --> |Boolean dorks & recruiter keywords| SearchStrat[keyword_tracker.py, linkedin_agent.py & search_strategies.json]
+        LLMBrain --> |Expert salary & screening answers| QAStrat[qa_memory.py & learned_qa_bank.json]
+        LLMBrain --> |Persistent Ledger| KB[reels_knowledge_base.json]
+    end
+
+    subgraph User Control & Visibility
+        KB --> DashboardTab[Mission Control Reel & Strategy Lab]
+        KB --> TGBotCards[Telegram Interactive Review & Toggle Cards]
+    end
+```
+
+- **Zero-Friction Ingestion Channels**:
+  - **Mobile 1-Tap Share via Telegram**: When scrolling Instagram or WhatsApp on your phone, tap **Share -> Telegram -> `@mac_job_bot`** or send `/reel <link>`. The bot immediately downloads, transcribes, extracts takeaways, and upgrades the system.
+  - **Mission Control Web Dashboard**: Dedicated **"Reel & Strategy Lab"** tab at `http://localhost:8765` with a quick URL paste box, transcript textarea, active strategy switches, and live telemetry cards.
+  - **Automatic Dropzone Watcher (`dropzone/reels/`)**: Place any `.mp4`, `.mov`, `.mp3`, or `.txt` URLs file into `dropzone/reels/` (via AirDrop or Finder), and the system automatically ingests and moves it to `processed/`.
+  - **Thread-Safe Sequential Queue (FIFO)**: If multiple reel links or video clips are shared back-to-back (or in a multi-link batch message), the system places them into an orderly sequential FIFO queue with real-time position notices (`Position #2`, `Position #3`, etc.). Tasks are processed strictly one-by-one with `threading.RLock()` protection, preventing CPU spikes, memory exhaustion, or database write collisions.
+  - **CLI Command**: `python3 reel_knowledge_agent.py --url <link>` or `python3 run_all.py --scan-reels`.
+- **Multimodal Audio-Visual & Text Extraction Pipeline**:
+  - **Spoken Audio Speech-to-Text**: Isolates clean 16kHz mono audio via `/opt/homebrew/bin/ffmpeg` and transcribes using Groq Whisper API, OpenAI Whisper, or local CLI.
+  - **Video Frame OCR (Visual Text Overlays)**: Uses `ffmpeg` to sample keyframes (0.5 fps) and processes them through Apple Silicon NEON-accelerated **Tesseract 5.5 OCR**. It reads on-screen text overlays, slides, bullet points, and prompts—essential for reels that play background music with no speech or point to text on screen.
+  - **Reel Caption & Description**: Ingests post descriptions and hashtags (where creators often write *"Template in caption 👇"*).
+  - **Context Fusion**: Merges spoken dialogue + on-screen text + caption into a unified prompt before categorization by Ollama LLM.
+- **System Modifications (Closing the Loop)**:
+  - **Cold Outreach Upgrades**: Injects winning subject line formulas (e.g. *"Quick question regarding backend scale at {company_name}"*) and 3-sentence metric pitch templates into `cold_email_agent.py`.
+  - **Resume Tailoring Upgrades**: Updates power verb lists and Google XYZ bullet point constraints in `resume_editor.py` and `optimizer.py`.
+  - **Search Query Evolution**: Injects high-intent boolean search strings (e.g. `site:linkedin.com/in/ "hiring" ("Java" OR "Spring Boot")`) directly into `keyword_tracker.py` and `linkedin_agent.py`.
+  - **Screening Q&A Memory**: Pre-populates proven expert answers into `qa_memory.py` so future applications on Greenhouse, Workday, and Naukri use top-tier recruiter-tested responses.
 
 ---
 
@@ -836,6 +905,31 @@ python3 run_all.py --emails
 
 # Or run directly via agent.py
 python3 agent.py
+```
+
+### Autonomous Reel & Career Advice Knowledge Engine
+```bash
+# Ingest an Instagram reel or YouTube Shorts by URL:
+python3 reel_knowledge_agent.py --url "https://www.instagram.com/reel/Cxxxxxx/"
+
+# Ingest a local video, screen recording, or audio clip (.mp4, .mov, .mp3):
+python3 reel_knowledge_agent.py --file "path/to/reel_video.mp4"
+
+# Ingest direct career advice text / caption:
+python3 reel_knowledge_agent.py --text "Use this cold email subject: Quick question regarding scale..."
+
+# Scan dropzone/reels/ folder for newly AirDropped videos or text files:
+python3 run_all.py --scan-reels
+# Or directly:
+python3 reel_knowledge_agent.py --scan-dropzone
+
+# View active reel strategies, cold email variants & resume rules summary:
+python3 run_all.py --reels
+# Or directly:
+python3 reel_knowledge_agent.py --stats
+
+# List all ingested reels:
+python3 reel_knowledge_agent.py --list
 ```
 
 ### Autonomous Self-Learning & Optimization Cycle
@@ -1276,7 +1370,7 @@ All personal, screening, credential, and portal parameters are centralized in [`
 │
 ├── recruiter_copilot.py                   # Recruiter Copilot unified orchestration coordinator
 ├── recruiter_harvester.py                 # Gmail IMAP recruiter email harvester & classifier
-├── crm_tracker.py                         # Recruiter Relationship CRM (11 lifecycle stages)
+├── crm_tracker.py                         # Recruiter Relationship CRM (12 lifecycle stages)
 ├── task_manager.py                        # Action item & obligation tracker (tasks.json)
 ├── recruiter_link_applier.py              # Autonomous recruiter link solver & submitter
 ├── reply_agent.py                         # Context-aware AI email reply generator (RFC 2822)

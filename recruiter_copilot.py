@@ -94,8 +94,8 @@ def run_recruiter_copilot_cycle(lookback_days: int = 14, max_emails: int = 50,
         intent = lead.get("intent", "GENERAL_INQUIRY")
         message_id = lead.get("message_id", "")
 
-        # Skip non-actionable intents or ignored broadcasts
-        if intent in ("IGNORE", "APPLICATION_RECEIPT", "REJECTION", "INTERVIEW_COMPLETED"):
+        # Skip non-actionable intents, ignored broadcasts, or referral-only policy notices (handled via LinkedIn hunt)
+        if intent in ("IGNORE", "APPLICATION_RECEIPT", "REJECTION", "INTERVIEW_COMPLETED", "REFERRAL_ONLY_POLICY"):
             continue
 
         # Check if application link was completed for this recruiter
@@ -127,7 +127,9 @@ def run_recruiter_copilot_cycle(lookback_days: int = 14, max_emails: int = 50,
         "links_processed": len(applied_results),
         "links_successful": len([a for a in applied_results if a.get("success")]),
         "reply_drafts_prepared": len(drafts_created),
-        "active_pending_tasks": len(task_manager.get_pending_tasks())
+        "active_pending_tasks": len(task_manager.get_pending_tasks()),
+        "bounces_purged": harvest_res.get("bounces_purged", 0),
+        "crm_purged_total": harvest_res.get("crm_purged_total", 0)
     }
 
     logging.info(f"[RecruiterCopilot] Cycle Summary: {json.dumps(summary, indent=2)}")

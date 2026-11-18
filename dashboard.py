@@ -32,6 +32,7 @@ import reply_agent
 import crm_tracker
 import qa_memory
 import pending_qa
+import reel_knowledge_agent
 
 CONFIG_PATH = os.path.join(BASE_DIR, 'config.json')
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
@@ -2248,6 +2249,19 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
         elif path == '/api/qa/bank':
             self._send_json(200, qa_memory.load_qa_memory())
 
+        # 11b. Reel & Career Advice Knowledge Base & Strategies API
+        elif path == '/api/reels':
+            kb = reel_knowledge_agent.load_knowledge_base()
+            stats = reel_knowledge_agent.get_strategy_stats()
+            reels_list = list(kb.get("reels", {}).values())
+            reels_list.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+            self._send_json(200, {
+                "stats": stats,
+                "reels": reels_list,
+                "ideas": reel_knowledge_agent.get_feature_ideas(),
+                "total": len(reels_list)
+            })
+
         # 12. PWA Manifest & App Icons
         elif path == '/manifest.json':
             manifest_path = os.path.join(BASE_DIR, 'assets', 'manifest.json')
@@ -2408,6 +2422,18 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             success = crm_tracker.update_stage(email, new_stage, note)
             self._send_json(200, {"success": success})
 
+        # 7.1 Delete Recruiter Contact
+        elif path == '/api/crm/delete':
+            email = payload.get("email", "")
+            reason = payload.get("reason", "Deleted via Dashboard")
+            success = crm_tracker.delete_contact(email, reason=reason)
+            self._send_json(200, {"success": success, "email": email})
+
+        # 7.2 Purge Bounced and Invalid Contacts
+        elif path == '/api/crm/purge':
+            purge_stats = crm_tracker.purge_not_working_emails()
+            self._send_json(200, {"success": True, "stats": purge_stats})
+
         # 8. Trigger Background Action Command
         elif path == '/api/actions/run':
             action_key = payload.get("action", "")
@@ -2448,6 +2474,44 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             if deleted:
                 qa_memory.save_qa_memory(mem)
             self._send_json(200, {"success": deleted})
+
+        # 12b. Ingest Instagram Reel or Video Tip
+        elif path == '/api/reels/ingest':
+            url = payload.get("url", "").strip()
+            text = payload.get("text", "").strip()
+            if not url and not text:
+                self._send_json(400, {"success": False, "error": "Either URL or text is required."})
+            else:
+                try:
+                    record = reel_knowledge_agent.ingest_reel(
+                        source_url_or_path=url or "Manual Dashboard Input",
+                        raw_text=text if text else None,
+                        auto_apply=True
+                    )
+                    self._send_json(200, {"success": True, "reel": record})
+                except Exception as e:
+                    self._send_json(500, {"success": False, "error": str(e)})
+
+        # 12c. Toggle Reel Strategy Status
+        elif path == '/api/reels/toggle':
+            reel_id = payload.get("reel_id", "")
+            enabled = payload.get("enabled", True)
+            success = reel_knowledge_agent.toggle_strategy(reel_id, enabled)
+            self._send_json(200, {"success": success, "reel_id": reel_id})
+
+        # 12d. Delete Reel Strategy
+        elif path == '/api/reels/delete':
+            reel_id = payload.get("reel_id", "")
+            success = reel_knowledge_agent.delete_strategy(reel_id)
+            self._send_json(200, {"success": success, "reel_id": reel_id})
+
+        # 12e. Scan Reels Dropzone
+        elif path == '/api/reels/scan_dropzone':
+            try:
+                processed = reel_knowledge_agent.scan_dropzone()
+                self._send_json(200, {"success": True, "count": len(processed), "processed": processed})
+            except Exception as e:
+                self._send_json(500, {"success": False, "error": str(e)})
 
         # 13. Clean On-Demand Server Shutdown (Frees RAM to 0 MB)
         elif path == '/api/server/shutdown':

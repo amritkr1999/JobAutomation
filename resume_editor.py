@@ -52,7 +52,16 @@ TECH_KEYWORDS = [
     "system design", "multithreading", "high throughput", "low latency", "b2b", "saas",
     "jwt", "oauth2", "spring security", "security", "grpc", "junit", "mockito",
     "elasticsearch", "rabbitmq", "terraform", "linux", "git", "websockets", "vite",
-    "redux", "sql", "nosql", "event-driven", "swagger", "openapi", "liquibase", "flyway"
+    "redux", "sql", "nosql", "event-driven", "swagger", "openapi", "liquibase", "flyway",
+    "power bi", "tableau", "pandas", "numpy", "scikit-learn", "sklearn", "dax", "power query",
+    "data modeling", "eda", "etl", "data pipeline", "star schema", "machine learning",
+    "data science", "data analyst", "nlp", "embeddings", "statistical analysis", "statistics",
+    "hypothesis testing", "a/b testing", "excel", "looker", "metabase", "anomaly detection",
+    "forward deployed", "fde", "solutions engineer", "solutions architecture", "solution architect",
+    "api integration", "client solutions", "rapid prototyping", "poc", "mvp",
+    "technical project manager", "project manager", "tpm", "scrum master", "agile", "scrum",
+    "sprint planning", "jira", "confluence", "linear", "stakeholder management", "risk mitigation",
+    "sdlc", "delivery management", "release management"
 ]
 
 
@@ -94,7 +103,29 @@ def extract_keywords_from_jd(jd_text):
         "linux": "Linux", "git": "Git", "websockets": "WebSockets", "vite": "Vite",
         "redux": "Redux", "sql": "SQL", "nosql": "NoSQL",
         "event-driven": "Event-Driven Architecture", "swagger": "Swagger / OpenAPI",
-        "openapi": "Swagger / OpenAPI", "liquibase": "Liquibase", "flyway": "Flyway"
+        "openapi": "Swagger / OpenAPI", "liquibase": "Liquibase", "flyway": "Flyway",
+        "power bi": "Power BI", "tableau": "Tableau", "pandas": "Pandas",
+        "numpy": "NumPy", "scikit-learn": "Scikit-Learn", "sklearn": "Scikit-Learn",
+        "dax": "DAX", "power query": "Power Query", "data modeling": "Data Modeling",
+        "eda": "Exploratory Data Analysis (EDA)", "etl": "ETL Pipelines",
+        "data pipeline": "Data Pipelines", "star schema": "Star Schema",
+        "machine learning": "Machine Learning", "data science": "Data Science",
+        "data analyst": "Data Analysis", "nlp": "NLP", "embeddings": "Semantic Embeddings",
+        "statistical analysis": "Statistical Analysis", "statistics": "Statistical Analysis",
+        "hypothesis testing": "Hypothesis Testing", "a/b testing": "A/B Testing",
+        "excel": "Advanced Excel", "looker": "Looker Studio", "metabase": "Metabase",
+        "anomaly detection": "Anomaly Detection",
+        "forward deployed": "Forward Deployed Engineering", "fde": "Forward Deployed Engineering",
+        "solutions engineer": "Solutions Engineering", "solutions architecture": "Solutions Architecture",
+        "solution architect": "Solutions Architecture", "api integration": "API Integrations",
+        "client solutions": "Client Solutions", "rapid prototyping": "Rapid Prototyping",
+        "poc": "Proof of Concept (POC)", "mvp": "MVP Delivery",
+        "technical project manager": "Technical Project Management", "project manager": "Project Management",
+        "tpm": "Technical Program Management", "scrum master": "Scrum Master",
+        "agile": "Agile / Scrum", "scrum": "Agile / Scrum", "sprint planning": "Sprint Planning",
+        "jira": "Jira", "confluence": "Confluence", "linear": "Linear",
+        "stakeholder management": "Stakeholder Management", "risk mitigation": "Risk Mitigation",
+        "sdlc": "SDLC", "delivery management": "Delivery Management", "release management": "Release Engineering"
     }
     seen = set()
     for f in found:
@@ -116,7 +147,15 @@ def generate_tailored_summary(master_data, role_title, key_reqs, jd_text="", pre
     # Check key requirements for smart automatic preset selection
     reqs_str = " ".join(key_reqs).lower() + " " + jd_text.lower() + " " + role_title.lower()
     
-    if "ai" in reqs_str or "llm" in reqs_str or "vision" in reqs_str:
+    if any(k in reqs_str for k in ["data scientist", "machine learning", "data science", "nlp"]):
+        base = summaries.get('data_scientist') or summaries.get('ai_systems')
+    elif any(k in reqs_str for k in ["data analyst", "business intelligence", "bi analyst", "analytics", "power bi", "tableau"]):
+        base = summaries.get('data_analyst')
+    elif any(k in reqs_str for k in ["forward deployed", "fde", "solutions engineer", "deployment engineer", "solution engineer"]):
+        base = summaries.get('forward_deployed') or summaries.get('default')
+    elif any(k in reqs_str for k in ["technical project manager", "project manager", "tpm", "scrum master", "delivery manager", "program manager"]):
+        base = summaries.get('technical_project_manager') or summaries.get('default')
+    elif "ai" in reqs_str or "llm" in reqs_str or "vision" in reqs_str:
         base = summaries.get('ai_systems')
     elif "cloud" in reqs_str or "devops" in reqs_str or "docker" in reqs_str or "kubernetes" in reqs_str:
         base = summaries.get('cloud_devops')
@@ -185,6 +224,12 @@ def reorder_skills_for_target(master_skills, key_reqs):
             score += 4
         if "ai" in reqs_str and "AI" in cat_name:
             score += 4
+        if any(k in reqs_str for k in ["data", "analyst", "bi", "tableau", "power bi", "analytics"]) and "Data Analysis" in cat_name:
+            score += 7
+        if any(k in reqs_str for k in ["science", "scientist", "machine learning", "ml", "nlp"]) and "Machine Learning" in cat_name:
+            score += 7
+        if any(k in reqs_str for k in ["sql", "database", "postgres", "mysql"]) and "Databases" in cat_name:
+            score += 5
 
         # Intra-category skill reordering: bring matching skills to the front
         if isinstance(skill_items, list):
@@ -403,7 +448,17 @@ def create_tailored_resume_data(
                 key_reqs.append(r)
                 
     if not key_reqs:
-        key_reqs = ["Java 21", "Spring Boot 3", "Microservices", "React 19", "PostgreSQL", "AWS"]
+        role_lower = role_title.lower()
+        if any(k in role_lower for k in ["data analyst", "business intelligence", "bi analyst", "analytics"]):
+            key_reqs = ["SQL", "Python", "Power BI", "PostgreSQL", "ETL", "Data Modeling"]
+        elif any(k in role_lower for k in ["data scientist", "machine learning", "data science", "nlp"]):
+            key_reqs = ["Python", "Machine Learning", "NLP", "SQL", "FastAPI", "Data Modeling"]
+        elif any(k in role_lower for k in ["forward deployed", "fde", "solutions engineer", "deployment engineer", "solution engineer"]):
+            key_reqs = ["Python", "Java", "PostgreSQL", "AWS", "API Integrations", "System Design"]
+        elif any(k in role_lower for k in ["technical project manager", "project manager", "tpm", "scrum master", "delivery manager", "program manager"]):
+            key_reqs = ["Agile / Scrum", "Sprint Delivery", "System Architecture", "Jira", "Risk Management", "Stakeholder Alignment"]
+        else:
+            key_reqs = ["Java 21", "Spring Boot 3", "Microservices", "React 19", "PostgreSQL", "AWS"]
 
     # 3. Build Subtitle
     subtitle = build_adaptive_subtitle(role_title, key_reqs)

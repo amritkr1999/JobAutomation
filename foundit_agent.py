@@ -715,6 +715,20 @@ def apply_to_foundit_jobs(page, config, ledger, logs_dir, max_applies=None):
                         except Exception:
                             pass
 
+                    # Universally harvest Job Poster & queue Employee Referral Hunt
+                    try:
+                        import intent_miner
+                        intent_miner.bridge_job_poster_and_referral(
+                            page=page,
+                            company=company,
+                            role=title,
+                            platform_name="foundit",
+                            modal_or_container=detail_loc if detail_loc.count() > 0 else None,
+                            logs_dir=logs_dir
+                        )
+                    except Exception as ex:
+                        logging.debug(f"[Foundit] Poster/referral bridge note: {ex}")
+
                     # Locate Apply button in right pane
                     detail_apply_btn = page.locator(
                         "div.srpJdContainer button:has-text('Apply'), div.applyBtnCont button, div.applyBtnCont, div.btnFunctionality button"

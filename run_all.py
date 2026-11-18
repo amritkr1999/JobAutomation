@@ -628,11 +628,36 @@ def main():
     parser.add_argument("--notify-health", action="store_true", help="Dispatch live bottleneck diagnostics & overcoming guide to Telegram.")
     parser.add_argument("--notify-weekly", action="store_true", help="Dispatch 7-day comparative weekly status audit to Telegram.")
     parser.add_argument("--bot", action="store_true", help="Launch interactive background Telegram command listener daemon.")
+    parser.add_argument("--reels", action="store_true", help="Display active career strategies and knowledge base extracted from reels.")
+    parser.add_argument("--scan-reels", action="store_true", help="Scan dropzone/reels/ folder and ingest any video or advice files.")
     args = parser.parse_args()
 
     if args.dashboard:
         import dashboard
         dashboard.start_dashboard(port=args.port, open_browser=True)
+        return
+
+    if args.reels:
+        import reel_knowledge_agent
+        stats = reel_knowledge_agent.get_strategy_stats()
+        print("\n" + "=" * 65)
+        print("   REEL STRATEGIES & CAREER KNOWLEDGE BASE")
+        print("=" * 65)
+        print(f"• Total Reels Ingested:        {stats.get('total_reels_ingested', 0)}")
+        print(f"• Active System Strategies:    {stats.get('active_reels', 0)}")
+        print(f"• Cold Email Subject Variants: {stats.get('cold_email_subjects_count', 0)}")
+        print(f"• Cold Email Pitch Hooks:      {stats.get('cold_email_hooks_count', 0)}")
+        print(f"• Resume ATS Rules:            {stats.get('resume_rules_count', 0)}")
+        print(f"• Discovered Search Queries:   {stats.get('search_queries_count', 0)}")
+        print(f"• Categories Breakdown:        {stats.get('categories_breakdown', {})}")
+        print("=" * 65 + "\n")
+        return
+
+    if args.scan_reels:
+        import reel_knowledge_agent
+        print("\n[Reel Knowledge Agent] Scanning dropzone/reels/ for new media...")
+        res = reel_knowledge_agent.scan_dropzone()
+        print(f"Processed {len(res)} items from dropzone/reels/.")
         return
 
     if len(sys.argv) == 1 or args.status:

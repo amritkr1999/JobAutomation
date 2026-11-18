@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "last_updated": "2026-11-17 10:13:31",
+  "subject_line_templates": [
+    "Quick question regarding backend scale at {company_name}",
+    "1 Quick Question regarding {company_name}'s Engineering Team — {sender_name}",
+    "Exploring Full Stack / Backend Roles at {company_name} — {sender_name} (Immediate Joiner)",
+    "Exploring {company_name} opportunities with {sender_name} as a {tech_stack} expert",
+    "Exploring Engineering Opportunities at {company_name} — {sender_name} (3+ YOE)",
+    "Full Stack / Backend Engineer — {sender_name} | 3.5 YOE (Available in {notice})",
+    "Urgent Opening for Java Developer @Hyderabad",
+    "Immediate Join Opportunity for Java Developer",
+    "Subject: Application for Senior MIS Analyst position at Moksha Retails Global Pvt Ltd",
+    "Subject: Senior Full Stack Java Developer Opportunity at Motivity Labs",
+    "Subject: Application for DevOps Engineer Role at {company_name}",
+    "Java Full Stack Lead – Your Experience"
+  ],
+  "pitch_hooks": [
+    "Hi {recipient_name}, I came across {company_name} and was impressed by your engineering architecture.",
+    "Hi {recipient_name}, I'd love to discuss how my technical skills in {tech_stack} align with {company_name}'s needs.",
+    "Hi Aparna, I came across the urgent opening for a Java Developer at Altimetrik and I'm excited to apply.",
+    "Hi Aparna, I'm a Java Developer with 3+ years of experience and I'm immediately available to join. Can we discuss further?",
+    "Dear Hiring Manager, I came across the Senior MIS Analyst position at Moksha Retails Global Pvt Ltd and was impressed by the company's focus on data-driven decision making.",
+    "Dear Hiring Manager, I came across the Senior MIS Analyst position at Moksha Retails Global Pvt Ltd and was impressed by the company's focus on data-driven decision-making. I would like to express my interest in the role and highlight my relevant experience in MIS, BI tools, and AI.",
+    "Hi {sender_name}, I came across the Senior Full Stack Java Developer role at Motivity Labs and I'm excited to apply. With {tech_stack} expertise and {years} years of experience, I believe I'd be a great fit for this position.",
+    "Hi {sender_name}, I came across the DevOps Engineer role at {company_name} and I'm excited to apply. I'd like to submit my updated resume and provide the required details.",
+    "Dear {sender_name}, I'm excited to apply for the Java Full Stack Lead position at AdvanceSoftIndia, as advertised on {job_board}."
+  ],
+  "call_to_actions": [
+    "Would you be open to a 5-minute introductory call next week?",
+    "Would you be open to a brief 5-minute introductory call this week?",
+    "Would love to discuss how my skills can drive value for {company_name}. Let's schedule a call!",
+    "Let's schedule a brief conversation to discuss how I can contribute to your team.",
+    "I would love to connect for a quick 5-minute sync if you have availability this week.",
+    "Please find my resume attached and let's schedule a call to discuss further.",
+    "I'd love to discuss my qualifications and how I can contribute to Altimetrik. Can we schedule a call?",
+    "I would appreciate the opportunity to discuss my qualifications further and explain in greater detail why I am the ideal candidate for this role.",
+    "I would appreciate the opportunity to discuss my qualifications further and learn more about the company's vision for the role. Please find my updated CV attached.",
+    "I'd love to discuss my qualifications further and learn more about the role. Please find my resume attached.",
+    "Please find my updated resume attached and I'd be happy to discuss further if selected.",
+    "Please find my updated resume attached, and I look forward to discussing my qualifications further."
+  ]
+}

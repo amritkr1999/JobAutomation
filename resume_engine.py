@@ -62,7 +62,17 @@ def save_master_resume(data):
 def build_adaptive_subtitle(role="Full Stack Developer", highlighted_skills=None):
     """Generate role-aligned headline subtitle."""
     role = role.strip() if role else "Full Stack Developer"
-    core_stack = ["Java 21", "Spring Boot 3", "Microservices", "React 19", "Python FastAPI", "AWS"]
+    role_lower = role.lower()
+    if any(k in role_lower for k in ["data analyst", "business intelligence", "bi analyst", "analytics"]):
+        core_stack = ["SQL", "Python", "Power BI", "PostgreSQL", "ETL", "Data Modeling"]
+    elif any(k in role_lower for k in ["data scientist", "machine learning", "data science", "nlp"]):
+        core_stack = ["Python", "Machine Learning", "NLP", "SQL", "FastAPI", "Data Modeling"]
+    elif any(k in role_lower for k in ["forward deployed", "fde", "solutions engineer", "deployment engineer", "solution engineer"]):
+        core_stack = ["Python", "Java", "PostgreSQL", "AWS", "API Integrations", "Client Solutions"]
+    elif any(k in role_lower for k in ["technical project manager", "project manager", "tpm", "scrum master", "delivery manager", "program manager"]):
+        core_stack = ["Agile / Scrum", "Sprint Delivery", "System Architecture", "Jira", "Risk Management", "Stakeholder Alignment"]
+    else:
+        core_stack = ["Java 21", "Spring Boot 3", "Microservices", "React 19", "Python FastAPI", "AWS"]
     
     if highlighted_skills:
         for skill in reversed(highlighted_skills):

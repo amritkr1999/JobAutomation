@@ -26,7 +26,7 @@ LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 
 # Heuristics for Noise, Newsletters, Promo Ads and Automated Broadcast Exclusion
 IGNORED_SENDERS_REGEX = re.compile(
-    r'(?i)(mailer-daemon|no-?reply|donotreply|do-not-reply|notifications?|alerts?|updates?|newsletters?|'
+    r'(?i)(postmaster|mailer-daemon|no-?reply|donotreply|do-not-reply|notifications?|alerts?|updates?|newsletters?|'
     r'marketing|promotions?|digest|mailer@|jobmessenger@|indeedapply@|jobs\.shine\.com|'
     r'shine\.com|monsterindia\.com|indeed\.com|naukri\.com|glassdoor\.com|'
     r'invitations@linkedin\.com|jobalerts-noreply@linkedin\.com|alert@naukri\.com|'
@@ -43,7 +43,8 @@ HIRING_KEYWORDS = [
     "recruiter", "talent acquisition", "opening", "assessment", "hackerrank",
     "codility", "technical discussion", "profile", "forms.gle", "docs.google.com/forms",
     "forms.office.com", "greenhouse.io", "myworkdayjobs.com", "notice period",
-    "current ctc", "expected ctc", "resume", "cv", "hiring", "schedule a call"
+    "current ctc", "expected ctc", "resume", "cv", "hiring", "schedule a call",
+    "referral", "employee referrals", "vouch for you", "internal referral"
 ]
 
 
@@ -196,6 +197,25 @@ def classify_message_intent(subject: str, body: str, links: list) -> tuple:
     if any(q in text for q in rejection_cues):
         return "REJECTION", "NEGATIVE", False, None
 
+    # 1.1 Referral-Only Policy Check (e.g. Zomato / Eternal)
+    referral_cues = [
+        "only accept applications through employee referrals",
+        "only accept applications through referrals",
+        "through employee referrals",
+        "employee referrals only",
+        "find someone in our team who can vouch",
+        "vouch for you, and have a conversation",
+        "internal referral only",
+        "require an internal referral",
+        "applications through referrals only"
+    ]
+    if any(q in text for q in referral_cues):
+        return "REFERRAL_ONLY_POLICY", "POSITIVE", True, {
+            "type": "REFERRAL_HUNT",
+            "title": "Connect with Employees on LinkedIn for Referral",
+            "priority": "HIGH"
+        }
+
     # 1.5 Interview Completed / Post-Interview Feedback Check
     interview_completed_cues = [
         "thank you for completing your", "completed your interview", "completing your ai interview",
@@ -308,6 +328,142 @@ def extract_company_and_role(subject: str, body: str, sender_email: str, existin
     return company or "Hiring Company", role or "Full Stack Developer"
 
 
+def harvest_and_purge_bounced_emails(mail, since_date: str, sender_email: str) -> dict:
+    """
+    Search Gmail IMAP for hard bounce notices (mailer-daemon, delivery status notifications),
+    extract rejected recipient addresses, add them to suppression_list.json, mark BOUNCED in sent_emails.json,
+    and permanently delete them from recruiter_crm.json.
+    """
+    logging.info(f"[Harvester-Bounces] Searching for bounce notices since {since_date}...")
+    bounced_found = set()
+
+    search_queries = [
+        f'(FROM "mailer-daemon" SINCE "{since_date}")',
+        f'(FROM "Mail Delivery Subsystem" SINCE "{since_date}")',
+        f'(SUBJECT "Delivery Status Notification" SINCE "{since_date}")',
+        f'(SUBJECT "Undelivered Mail Returned to Sender" SINCE "{since_date}")'
+    ]
+
+    all_bounce_ids = []
+    for q in search_queries:
+        try:
+            typ, data = mail.search(None, q)
+            if typ == "OK" and data and data[0]:
+                for mid in data[0].split():
+                    if mid not in all_bounce_ids:
+                        all_bounce_ids.append(mid)
+        except Exception as ex:
+            logging.debug(f"[Harvester-Bounces] Query '{q}' error: {ex}")
+
+    if not all_bounce_ids:
+        logging.info("[Harvester-Bounces] No bounce messages detected in target date window.")
+        return {"bounced_count": 0, "purged_from_crm": 0, "bounced_addresses": []}
+
+    logging.info(f"[Harvester-Bounces] Inspecting {len(all_bounce_ids)} bounce notifications...")
+
+    supp_path = os.path.join(LOGS_DIR, "suppression_list.json")
+    sent_path = os.path.join(LOGS_DIR, "sent_emails.json")
+
+    supp_data = {"suppressed_emails": {}, "suppressed_domains": {}}
+    if os.path.exists(supp_path):
+        try:
+            with open(supp_path, 'r', encoding='utf-8') as sf:
+                supp_data = json.load(sf)
+        except Exception:
+            pass
+
+    sent_records = {}
+    if os.path.exists(sent_path):
+        try:
+            with open(sent_path, 'r', encoding='utf-8') as sef:
+                sent_records = json.load(sef)
+        except Exception:
+            pass
+
+    sender_lower = (sender_email or "").strip().lower()
+    system_ignore = {'mailer-daemon', 'googlemail.com', 'google.com', 'amazonses.com', 'postmaster'}
+
+    for mid in all_bounce_ids:
+        try:
+            _, msg_data = mail.fetch(mid, "(BODY.PEEK[TEXT])")
+            if not msg_data or not msg_data[0]:
+                continue
+            raw_text = msg_data[0][1].decode("utf-8", errors="ignore")
+
+            candidates = set()
+            for pattern in [
+                r'(?i)Final-Recipient:\s*rfc822;\s*<?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>?',
+                r'(?i)Original-Recipient:\s*rfc822;\s*<?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>?',
+                r'(?i)(?:Address not found|wasn\'t delivered to|failed permanently)\s*.*?<?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>?',
+                r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+            ]:
+                for match in re.findall(pattern, raw_text):
+                    m_lower = match.strip().lower()
+                    if m_lower == sender_lower or any(ign in m_lower for ign in system_ignore):
+                        continue
+                    if pattern.startswith('[a-zA-Z0-9'):
+                        norm_m = crm_tracker.normalize_email(m_lower)
+                        if norm_m not in sent_records and m_lower not in sent_records:
+                            continue
+                    candidates.add(m_lower)
+
+            for cand in candidates:
+                bounced_found.add(cand)
+        except Exception as ex:
+            logging.debug(f"[Harvester-Bounces] Error fetching bounce msg {mid}: {ex}")
+
+    purged_crm_count = 0
+    supp_updated = False
+    sent_updated = False
+
+    for b_email in bounced_found:
+        norm_b = crm_tracker.normalize_email(b_email)
+        now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # 1. Add to suppression_list
+        if norm_b not in supp_data.setdefault("suppressed_emails", {}):
+            supp_data["suppressed_emails"][norm_b] = {
+                "raw_email": b_email,
+                "reason": "HARD_BOUNCE_IMAP",
+                "created_at": now_ts
+            }
+            supp_updated = True
+
+        # 2. Update sent_records
+        for key in (norm_b, b_email):
+            if key in sent_records and isinstance(sent_records[key], dict):
+                if sent_records[key].get("status") != "BOUNCED":
+                    sent_records[key]["status"] = "BOUNCED"
+                    sent_records[key]["bounced_at"] = now_ts
+                    sent_updated = True
+
+        # 3. Delete from CRM contacts
+        deleted = crm_tracker.delete_contact(b_email, reason="HARD_BOUNCE_IMAP")
+        if deleted:
+            purged_crm_count += 1
+
+    if supp_updated:
+        try:
+            with open(supp_path, 'w', encoding='utf-8') as sf:
+                json.dump(supp_data, sf, indent=2, sort_keys=True)
+        except Exception as ex:
+            logging.warning(f"[Harvester-Bounces] Could not save suppression_list.json: {ex}")
+
+    if sent_updated:
+        try:
+            with open(sent_path, 'w', encoding='utf-8') as sef:
+                json.dump(sent_records, sef, indent=2)
+        except Exception as ex:
+            logging.warning(f"[Harvester-Bounces] Could not save sent_emails.json: {ex}")
+
+    logging.info(f"[Harvester-Bounces] Processed {len(bounced_found)} bounced emails | Purged {purged_crm_count} from CRM.")
+    return {
+        "bounced_count": len(bounced_found),
+        "purged_from_crm": purged_crm_count,
+        "bounced_addresses": list(bounced_found)
+    }
+
+
 def harvest_recruiter_emails(lookback_days: int = 14, max_emails: int = 50) -> dict:
     """
     Connects to Gmail via IMAP, discovers recruiter emails, updates CRM,
@@ -337,18 +493,30 @@ def harvest_recruiter_emails(lookback_days: int = 14, max_emails: int = 50) -> d
     processed_count = 0
     new_inbound = []
     links_to_apply = []
+    bounce_res = {"purged_from_crm": 0, "bounced_count": 0}
 
     try:
         mail = imaplib.IMAP4_SSL(imap_server, timeout=20)
         mail.login(sender_email, app_password)
         mail.select("INBOX", readonly=True)
 
+        # 1. Harvest & purge bounced emails to keep recruiter CRM and queues clean
+        bounce_res = harvest_and_purge_bounced_emails(mail, since_date, sender_email)
+
         # Search for messages since specified date
         typ, msg_ids = mail.search(None, f'(SINCE "{since_date}")')
         if typ != "OK" or not msg_ids or not msg_ids[0]:
             logging.info("[Harvester] No messages found in INBOX since target date.")
             mail.logout()
-            return {"status": "SUCCESS", "new_messages": 0}
+            crm_purge_res = crm_tracker.purge_not_working_emails()
+            return {
+                "status": "SUCCESS",
+                "new_messages": 0,
+                "leads": [],
+                "links_to_apply": [],
+                "bounces_purged": bounce_res.get("purged_from_crm", 0),
+                "crm_purged_total": crm_purge_res.get("purged_count", 0)
+            }
 
         id_list = msg_ids[0].split()
         # Scan most recent messages up to max_emails
@@ -367,7 +535,19 @@ def harvest_recruiter_emails(lookback_days: int = 14, max_emails: int = 50) -> d
             recruiter_name, from_email = parse_sender_info(from_hdr)
             norm_email = crm_tracker.normalize_email(from_email)
 
-            if not norm_email or IGNORED_SENDERS_REGEX.search(from_email) or from_email == sender_email:
+            if not norm_email or from_email == sender_email:
+                continue
+
+            # Check if this is a legitimate careers/people/talent/hiring noreply notice (e.g. Zomato)
+            is_careers_noreply = bool(re.search(r'(?i)(careers|talent|hiring|recruiting|people|jobs).*no-?reply', from_email))
+            if IGNORED_SENDERS_REGEX.search(from_email) and not is_careers_noreply:
+                continue
+
+            if not crm_tracker.is_valid_recruiter_email(from_email):
+                continue
+
+            is_supp, _ = crm_tracker.is_suppressed_or_bounced(from_email)
+            if is_supp:
                 continue
 
             subject = decode_mime_header(msg.get("Subject", ""))
@@ -438,6 +618,28 @@ def harvest_recruiter_emails(lookback_days: int = 14, max_emails: int = 50) -> d
                 except Exception as ex:
                     logging.debug(f"[Harvester] Draft cancellation note: {ex}")
 
+            # If referral-only policy, register referral hunt in Lead Hunt Queue
+            if intent == "REFERRAL_ONLY_POLICY":
+                try:
+                    import intent_miner
+                    hunt_co = company
+                    full_context = (subject + " " + body_text).lower()
+                    if "zomato" in full_context or "eternal" in full_context:
+                        hunt_co = "Zomato"
+                    intent_miner.queue_lead_for_hunt(
+                        company_name=hunt_co,
+                        role=role or "Software Engineer",
+                        recruiter_hint="",
+                        target_type="REFERRAL_HUNT",
+                        primary_tech=["Java 21", "Spring Boot 3", "Microservices", "React 19"],
+                        source="email_referral_policy",
+                        notes=f"Referral notice from {from_email}: {body_text[:200]}",
+                        logs_dir=LOGS_DIR
+                    )
+                    logging.info(f"[Harvester] 🎯 Queued referral hunt for '{hunt_co}' in Lead Hunt Queue.")
+                except Exception as ex:
+                    logging.warning(f"[Harvester] Failed to queue referral hunt: {ex}")
+
             # Auto-create Task if actionable
             if is_actionable and copilot_cfg.get("auto_create_tasks", True):
                 t_title = f"{task_sugg['title']} for {company}"
@@ -487,11 +689,16 @@ def harvest_recruiter_emails(lookback_days: int = 14, max_emails: int = 50) -> d
         logging.error(f"[Harvester] IMAP exception: {e}")
         return {"status": "ERROR", "error": str(e), "new_messages": processed_count}
 
+    # Automatically purge dead/bounced/invalid emails from recruiter CRM to keep it clean
+    crm_purge_res = crm_tracker.purge_not_working_emails()
+
     return {
         "status": "SUCCESS",
         "new_messages": processed_count,
         "leads": new_inbound,
-        "links_to_apply": links_to_apply
+        "links_to_apply": links_to_apply,
+        "bounces_purged": bounce_res.get("purged_from_crm", 0),
+        "crm_purged_total": crm_purge_res.get("purged_count", 0)
     }
 
 

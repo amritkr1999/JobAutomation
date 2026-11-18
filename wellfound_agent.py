@@ -441,6 +441,20 @@ def apply_to_wellfound_jobs(page, config, ledger, logs_dir, max_applies=None):
                     except Exception:
                         pass
 
+                # Universally harvest Job Poster & queue Employee Referral Hunt
+                try:
+                    import intent_miner
+                    intent_miner.bridge_job_poster_and_referral(
+                        page=page,
+                        company=company,
+                        role=title,
+                        platform_name="wellfound",
+                        modal_or_container=deep_pane if deep_pane.count() > 0 else None,
+                        logs_dir=logs_dir
+                    )
+                except Exception as ex:
+                    logging.debug(f"[Wellfound] Poster/referral bridge note: {ex}")
+
                 detail_apply_btn = page.locator("button:has-text('Apply'), a:has-text('Apply'), [data-test='apply-button']").first
                 if detail_apply_btn.count() == 0 or not detail_apply_btn.is_visible(timeout=3000):
                     logging.info(f"[Wellfound] No visible Apply CTA in detail page for '{title}'. Skipping.")

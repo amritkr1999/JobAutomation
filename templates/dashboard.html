@@ -159,6 +159,11 @@
         <span>QA Memory &amp; Review</span>
         <span id="tabBadgeQA" class="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">0</span>
       </button>
+      <button onclick="switchTab('reelsTab')" id="tabBtn-reelsTab" class="tab-btn px-4 py-3 font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 whitespace-nowrap">
+        <span>🎬</span>
+        <span>Reel &amp; Strategy Lab</span>
+        <span id="tabBadgeReels" class="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-rose-50 text-rose-700 border border-rose-200 font-semibold">0</span>
+      </button>
     </div>
   </div>
 
@@ -674,6 +679,122 @@
     </div>
 
     <!-- ===================================================================== -->
+    <!-- ===================================================================== -->
+    <!-- TAB: REEL & CAREER STRATEGY LAB -->
+    <!-- ===================================================================== -->
+    <div id="reelsTab" class="tab-content hidden space-y-6">
+      
+      <!-- TOP METRIC CARDS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Ingested</div>
+          <div class="text-2xl font-bold text-slate-900 mt-1" id="reelsStatTotal">0</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Reels &amp; Video Tips</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Active Strategies</div>
+          <div class="text-2xl font-bold text-emerald-600 mt-1" id="reelsStatActive">0</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Influencing Bot Live</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Cold Email Subjects</div>
+          <div class="text-2xl font-bold text-indigo-600 mt-1" id="reelsStatSubjects">0</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Harvested Variants</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Resume ATS Rules</div>
+          <div class="text-2xl font-bold text-blue-600 mt-1" id="reelsStatResume">0</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Tailoring Heuristics</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Search Queries</div>
+          <div class="text-2xl font-bold text-amber-600 mt-1" id="reelsStatQueries">0</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Boolean Dorks Injected</div>
+        </div>
+      </div>
+
+      <!-- INGESTION INTERFACE CARD -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h2 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+              <span>📥</span>
+              <span>Ingest Instagram Reel or Video Tip</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Paste an Instagram Reel, YouTube Shorts, or TikTok link, or paste career advice text. The system extracts speech, categorizes strategies, and auto-upgrades the bot.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button type="button" onclick="scanReelsDropzone()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
+              <span>📂</span>
+              <span>Scan dropzone/reels/</span>
+            </button>
+          </div>
+        </div>
+
+        <form id="reelIngestForm" onsubmit="handleReelIngest(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Reel / Video URL</label>
+            <input type="url" id="reelUrlInput" placeholder="https://www.instagram.com/reel/C... or https://youtube.com/shorts/..." class="w-full text-xs border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-indigo-500 font-mono">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Or Direct Advice Transcript / Captions (Optional)</label>
+            <textarea id="reelTextInput" rows="3" placeholder="If the video had captions, or you took notes, paste the transcript here directly..." class="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-indigo-500"></textarea>
+          </div>
+
+          <div class="flex justify-end items-center space-x-3">
+            <button type="submit" id="btnIngestReel" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center space-x-2">
+              <span>⚡</span>
+              <span>Ingest, Transcribe &amp; Upgrade System</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- INGESTED STRATEGIES BOARD -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h2 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+              <span>📚</span>
+              <span>Active Reel Knowledge Base &amp; Applied Strategies</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Manage and review career advice harvested into system prompts, cold email templates, and search queries.</p>
+          </div>
+          <!-- Category Filter Pills -->
+          <div class="flex items-center space-x-1 text-xs" id="reelFilterPills">
+            <button type="button" onclick="filterReelsCategory('ALL')" class="reel-pill active px-3 py-1 rounded-full bg-indigo-600 text-white font-semibold">All</button>
+            <button type="button" onclick="filterReelsCategory('COLD_EMAIL')" class="reel-pill px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">Cold Email</button>
+            <button type="button" onclick="filterReelsCategory('RESUME_ATS')" class="reel-pill px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">Resume ATS</button>
+            <button type="button" onclick="filterReelsCategory('JOB_SEARCH')" class="reel-pill px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">Job Search</button>
+            <button type="button" onclick="filterReelsCategory('SCREENING_QA')" class="reel-pill px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">Screening QA</button>
+          </div>
+        </div>
+
+        <div id="reelsListContainer" class="space-y-4">
+          <div class="text-center py-8 text-slate-400 text-xs">Loading strategies...</div>
+        </div>
+      </div>
+
+      <!-- SYSTEM EVOLUTION & FEATURE IDEAS BACKLOG CARD -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h2 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+              <span>💡</span>
+              <span>System Evolution &amp; Feature Ideas Backlog</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Novel automation ideas, tools, and workflows extracted from career reels to expand and improve your system.</p>
+          </div>
+          <span class="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-semibold" id="reelsIdeasCountBadge">0 Ideas</span>
+        </div>
+        <div id="reelsIdeasContainer" class="space-y-3">
+          <div class="text-center py-6 text-slate-400 text-xs">No feature ideas logged yet.</div>
+        </div>
+      </div>
+
+    </div>
+
     <!-- TAB: LIVE BOTTLENECKS, HEALTH TRACKER & WEEKLY AUDIT -->
     <!-- ===================================================================== -->
     <div id="analyticsTab" class="tab-content hidden space-y-6">
@@ -2464,6 +2585,264 @@
         loadAllData(false);
       }, 5000);
     });
+  
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // -------------------------------------------------------------------------
+    // REEL KNOWLEDGE BASE & STRATEGY LAB
+    // -------------------------------------------------------------------------
+    let globalReels = [];
+    let currentReelCategory = 'ALL';
+
+    async function fetchReels() {
+      const container = document.getElementById('reelsListContainer');
+      try {
+        const res = await fetch(`/api/reels?_t=${Date.now()}`).then(r => r.json());
+        const stats = res.stats || {};
+        globalReels = res.reels || [];
+
+        if (document.getElementById('reelsStatTotal')) document.getElementById('reelsStatTotal').innerText = stats.total_reels_ingested || 0;
+        if (document.getElementById('reelsStatActive')) document.getElementById('reelsStatActive').innerText = stats.active_reels || 0;
+        if (document.getElementById('reelsStatSubjects')) document.getElementById('reelsStatSubjects').innerText = stats.cold_email_subjects_count || 0;
+        if (document.getElementById('reelsStatResume')) document.getElementById('reelsStatResume').innerText = stats.resume_rules_count || 0;
+        if (document.getElementById('reelsStatQueries')) document.getElementById('reelsStatQueries').innerText = stats.search_queries_count || 0;
+
+        const tabBadge = document.getElementById('tabBadgeReels');
+        if (tabBadge) tabBadge.innerText = stats.active_reels || globalReels.length;
+
+        renderReelsList();
+        renderFeatureIdeas(res.ideas || []);
+      } catch (e) {
+        console.error('Error fetching reels:', e);
+        if (container) container.innerHTML = '<div class="text-xs text-rose-500 py-6 text-center">Failed to load reels knowledge base.</div>';
+      }
+    }
+
+    function filterReelsCategory(cat) {
+      currentReelCategory = cat;
+      document.querySelectorAll('#reelFilterPills .reel-pill').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'font-semibold', 'active');
+        btn.classList.add('bg-slate-100', 'text-slate-600');
+      });
+      if (window.event && window.event.target) {
+        window.event.target.classList.remove('bg-slate-100', 'text-slate-600');
+        window.event.target.classList.add('bg-indigo-600', 'text-white', 'font-semibold', 'active');
+      }
+      renderReelsList();
+        renderFeatureIdeas(res.ideas || []);
+    }
+
+    function renderReelsList() {
+      const container = document.getElementById('reelsListContainer');
+      if (!container) return;
+
+      const filtered = currentReelCategory === 'ALL'
+        ? globalReels
+        : globalReels.filter(r => r.category === currentReelCategory);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-10 bg-slate-50 border border-slate-100 rounded-xl space-y-2">
+            <div class="text-3xl">🎬</div>
+            <div class="font-bold text-xs text-slate-800">No Reels in this Category</div>
+            <div class="text-xs text-slate-500 max-w-sm mx-auto">Paste an Instagram Reel URL above or share a reel to Telegram (@mac_job_bot) to extract career strategies!</div>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(r => {
+        const catBadgeColors = {
+          'COLD_EMAIL': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+          'RESUME_ATS': 'bg-blue-50 text-blue-700 border-blue-200',
+          'JOB_SEARCH': 'bg-amber-50 text-amber-700 border-amber-200',
+          'SCREENING_QA': 'bg-purple-50 text-purple-700 border-purple-200',
+          'GENERAL_STRATEGY': 'bg-slate-100 text-slate-700 border-slate-200'
+        };
+        const catBadge = catBadgeColors[r.category] || 'bg-slate-100 text-slate-700 border-slate-200';
+        const isActive = r.status === 'ACTIVE';
+
+        const takes = (r.actionable_takeaways || []).map(t => `<li class="flex items-start space-x-1.5"><span class="text-indigo-500 font-bold">&bull;</span><span>${escapeHtml(t)}</span></li>`).join('');
+        const applied = (r.applied_components || []).map(c => `<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono text-[10px]">${escapeHtml(c)}</span>`).join('');
+
+        html += `
+          <div class="border ${isActive ? 'border-slate-200 bg-white' : 'border-slate-200/60 bg-slate-50/50 opacity-75'} rounded-xl p-5 space-y-3.5 transition hover:shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div class="flex items-center space-x-2.5">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${catBadge}">${escapeHtml(r.category || 'STRATEGY')}</span>
+                <span class="font-bold text-sm text-slate-900">${escapeHtml(r.title || 'Career Advice Tip')}</span>
+                <span class="text-[11px] text-slate-400">&bull; ${escapeHtml(r.created_at || '')}</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">${isActive ? 'ACTIVE' : 'DISABLED'}</span>
+                <button type="button" onclick="toggleReelStrategy('${r.id}', '${r.status}')" class="text-xs px-2.5 py-1 rounded border border-slate-200 hover:bg-slate-100 text-slate-700 font-medium transition">
+                  ${isActive ? 'Disable' : 'Enable'}
+                </button>
+                <button type="button" onclick="deleteReelStrategy('${r.id}')" class="text-xs px-2.5 py-1 rounded border border-rose-200 text-rose-600 hover:bg-rose-50 font-medium transition">
+                  Delete
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs text-slate-600 leading-relaxed font-medium">${escapeHtml(r.summary || '')}</p>
+            </div>
+
+            ${takes ? `
+              <div class="bg-slate-50 border border-slate-100 rounded-lg p-3 space-y-1.5 text-xs text-slate-700">
+                <div class="font-semibold text-slate-800 text-[11px] uppercase tracking-wider">Key Operational Takeaways:</div>
+                <ul class="space-y-1">${takes}</ul>
+              </div>
+            ` : ''}
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[11px] text-slate-400 font-medium">Upgraded:</span>
+                ${applied || '<span class="text-slate-400 text-[11px]">Knowledge Base only</span>'}
+              </div>
+              ${r.transcript ? `
+                <button type="button" onclick="viewReelTranscript('${r.id}')" class="text-[11px] text-indigo-600 hover:underline font-semibold flex items-center space-x-1">
+                  <span>📜 View Transcript</span>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    async function handleReelIngest(e) {
+      e.preventDefault();
+      const urlInput = document.getElementById('reelUrlInput');
+      const textInput = document.getElementById('reelTextInput');
+      const btn = document.getElementById('btnIngestReel');
+
+      const url = urlInput ? urlInput.value.trim() : '';
+      const text = textInput ? textInput.value.trim() : '';
+
+      if (!url && !text) {
+        showToast('Please provide a reel URL or career advice text.', 'error');
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳ Ingesting &amp; Transcribing...</span>';
+      }
+
+      try {
+        const res = await fetch('/api/reels/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, text })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast(`Ingested: ${res.reel.title}! System upgraded.`, 'success');
+          if (urlInput) urlInput.value = '';
+          if (textInput) textInput.value = '';
+          fetchReels();
+        } else {
+          showToast(`Ingest failed: ${res.error}`, 'error');
+        }
+      } catch (err) {
+        showToast('Error communicating with reel engine', 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>⚡ Ingest, Transcribe &amp; Upgrade System</span>';
+        }
+      }
+    }
+
+    async function toggleReelStrategy(reelId, currentStatus) {
+      try {
+        const enabled = (currentStatus !== 'ACTIVE');
+        const res = await fetch('/api/reels/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reel_id: reelId, enabled })
+        }).then(r => r.json());
+        if (res.success) {
+          showToast(`Strategy ${enabled ? 'enabled' : 'disabled'}.`, 'info');
+          fetchReels();
+        }
+      } catch (e) {
+        showToast('Error toggling strategy', 'error');
+      }
+    }
+
+    async function deleteReelStrategy(reelId) {
+      if (!confirm('Are you sure you want to remove this reel strategy?')) return;
+      try {
+        const res = await fetch('/api/reels/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reel_id: reelId })
+        }).then(r => r.json());
+        if (res.success) {
+          showToast('Strategy removed from knowledge base.', 'info');
+          fetchReels();
+        }
+      } catch (e) {
+        showToast('Error deleting strategy', 'error');
+      }
+    }
+
+    async function scanReelsDropzone() {
+      showToast('Scanning dropzone/reels/ for new videos...', 'info');
+      try {
+        const res = await fetch('/api/reels/scan_dropzone', { method: 'POST' }).then(r => r.json());
+        if (res.success) {
+          showToast(`Scan complete: Processed ${res.count} items.`, 'success');
+          fetchReels();
+        }
+      } catch (e) {
+        showToast('Error scanning dropzone', 'error');
+      }
+    }
+
+    function viewReelTranscript(reelId) {
+      const reel = globalReels.find(r => r.id === reelId);
+      if (!reel) return;
+      alert(`🎬 [${reel.category}] ${reel.title}\n\nTRANSCRIPT:\n\n${reel.transcript}\n\nSYSTEM UPDATES:\n${JSON.stringify(reel.system_updates, null, 2)}`);
+    }
+
+    function renderFeatureIdeas(ideas) {
+      const container = document.getElementById('reelsIdeasContainer');
+      const badge = document.getElementById('reelsIdeasCountBadge');
+      if (badge) badge.innerText = `${(ideas || []).length} Ideas`;
+      if (!container) return;
+      if (!ideas || ideas.length === 0) {
+        container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">No novel feature expansion ideas logged yet. Share strategic reels to harvest them!</div>';
+        return;
+      }
+      let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">';
+      ideas.forEach((item, idx) => {
+        const impactBadge = item.potential_impact === 'HIGH' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-700 border-slate-200';
+        html += `
+          <div class="border border-slate-200 bg-slate-50/60 rounded-xl p-4 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold text-slate-900">${idx + 1}. ${escapeHtml(item.title)}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${impactBadge}">${escapeHtml(item.potential_impact || 'HIGH')} IMPACT</span>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(item.description)}</p>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+              <span>Target: <code class="text-indigo-600 font-mono">${escapeHtml(item.target_module || 'pipeline')}</code></span>
+              <span class="text-[10px] font-medium bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">Ready to build</span>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
   </script>
 </body>
 </html>
