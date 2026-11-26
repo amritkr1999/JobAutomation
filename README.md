@@ -96,6 +96,11 @@ The engine coordinates multiple independent platform workers via a unified orche
 - Automatically extracts HR emails from flyer images using **Tesseract OCR** and LLM entity extraction.
 - Dispatches tailored resumes and personalized cover emails through Gmail SMTP with domain throttling and daily safety quotas.
 
+### 📱 Direct WhatsApp Recruiter Outreach & One-Tap Click-to-Chat
+- **Automated Phone Extraction**: Extracts hiring manager and agency WhatsApp numbers from LinkedIn posts, Naukri cards, dropzone screenshots, and text dumps.
+- **Dual Execution Engine**: Supports both **1-Tap Click-to-Chat links** (`wa.me`) delivered as interactive buttons to your Telegram bot, and **automated Playwright browser dispatch** with tailored resume PDF attachment.
+- **Anti-Ban Throttling**: Strict daily safety pacing (default: 10 messages/day, 45–90s jitter delays) and invalid number checks to keep your personal WhatsApp account secure.
+
 ### 🛡️ Humanized Browsing & Account Safety
 - Uses persistent, dedicated browser profiles for each platform (`browser_profile/`).
 - Humanized cursor movements, randomized interaction intervals (4–8s), and exponential backoff to avoid detection.

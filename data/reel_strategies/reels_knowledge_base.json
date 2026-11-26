@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "last_updated": "2026-11-18 10:09:18",
-  "total_reels": 50,
+  "last_updated": "2026-11-21 10:09:20",
+  "total_reels": 55,
   "reels": {
     "reel_20261030_190936_a49a0a": {
       "id": "reel_20261030_190936_a49a0a",
@@ -2469,6 +2469,269 @@
       ],
       "created_at": "2026-11-18 10:09:18",
       "applied_at": "2026-11-18 10:09:18"
+    },
+    "reel_20261118_121947_be8a8a": {
+      "id": "reel_20261118_121947_be8a8a",
+      "source": "Screenshot_20261113-064753.LinkedIn.png",
+      "is_url": false,
+      "title": "Java Developer / Java Full Stack Developer Job Opportunity in Bengaluru",
+      "category": "GENERAL_STRATEGY",
+      "summary": "Job opportunity for Java Developers and Java Full Stack Developers with 3-6 years of experience in Bengaluru",
+      "actionable_takeaways": [
+        "Send updated resume on WhatsApp to 9889299957",
+        "Include required information in the resume: name, current location, total experience, relevant Java experience, current CTC, expected CTC, notice period, last working date, and contact number"
+      ],
+      "system_updates": {
+        "cold_email_subjects": [
+          "Java Job Opportunity in Bengaluru - {company_name} is looking for Java Developers and Java Full Stack Developers"
+        ],
+        "cold_email_hooks": [
+          "Hi {sender_name}, I came across this job opportunity for Java Developers and Java Full Stack Developers in Bengaluru and thought of you"
+        ],
+        "cold_email_cta": [
+          "Send your updated resume on WhatsApp to 9889299957 to apply for this job opportunity"
+        ],
+        "resume_power_verbs": [
+          "Developed",
+          "Improved",
+          "Enhanced"
+        ],
+        "resume_bullet_formula": "e.g. Developed [X] Java applications as measured by [Y] by doing [Z]",
+        "resume_ats_rules": [
+          "Use keywords like Java, Java 8+, Java TL, Java 17, OOPs, Collections, Multithreading, Spring Boot, Spring MVC, Microservices, REST APIs, Hibernate, JPA, Spring Data JPA, SQL, MySQL, PostgreSQL, Spring Security, JWT, Kafka, Git, GitHub, Maven, Docker, Kubernetes, AWS, JUnit, Mockito"
+        ],
+        "search_queries": [
+          "site:linkedin.com OR site:glassdoor.com (Java Developer OR Java Full Stack Developer) AND (Bengaluru OR Bangalore) AND (3-6 years of experience)"
+        ],
+        "screening_qa": [
+          {
+            "question": "What is your relevant Java experience?",
+            "suggested_answer": "I have [X] years of experience in Java development, with expertise in [Y] and [Z]"
+          }
+        ],
+        "feature_ideas": [
+          {
+            "title": "Resume Parser and Formatter",
+            "description": "Automatically parse resumes and format them according to the required information and ATS rules",
+            "potential_impact": "HIGH",
+            "target_module": "resume_editor"
+          }
+        ]
+      },
+      "transcript": "; Tiyasha Mondal - ist von @ Yt gd K\n. Aspiring Data Analyst, Technical Diploma in Data ...\n17h\n\n¢ HIRING: JAVA DEVELOPER / JAVA FULL STACK\nDEVELOPER | BENGALURU\n® Location: Bengaluru\nExperience: 3-6 Years\n® Roles: Java Developer | Java Full Stack Developer\n¢@ LOOKING FOR A JAVA JOB? SEND YOUR RESUME\nDIRECTLY ON WHATSAPP!\nWe are actively connecting with Java Developers & Java Full\nStack Developers who are looking for a job change, new\nopportunity, or currently serving notice period.\nImmediate Joiners / Short Notice Candidates Preferred\n¢ KEY SKILLS:\n* Core Java / Java 8+ / Java Tl / Java 17\n+ OOPs / Collections / Multithreading\n+ Spring Boot / Spring MVC\n+ Microservices\n+ REST APIs\n+ Hibernate / JPA / Spring Data JPA\n+ SQL / MySQL / PostgreSQL\n+ Spring Security / JWT\n* Kafka\n+ Git / GitHub / Maven\n* Docker / Kubernetes / AWS\n+ JUnit / Mockito\n>: HOW TO APPLY — VERY EASY\nfi SEND YOUR UPDATED RESUME ON WHATSAPP:\n@ 9889299957 ¢\nAlong with your resume, please send:\nName:\nCurrent Location:\nTotal Experience:\nRelevant Java Experience:\nCurrent CTC:\nExpected CTC:\nNotice Period:\nLast Working Date:\nContact Number:\n~* \\f you are a Java Developer or Java Full Stack\nDeveloper with 3-6 years of experience, don't miss this\nopportunity.\nKnow someone looking for a Java job? TAG / SHARE\nthis post with them.\nfi RESUME ON WHATSAPP:\n@ 9889299957 ¢\n#JavaJobs #JavaDeveloper #JavaFullStackDeveloper\n#JavaHiring #JavaJobsBangalore #JavaJobsBengaluru\n#BengaluruJobs #BangaloreJobs #Hiring #HiringNow\n#ITJobs #TechJobs #SoftwareDeveloper\n#SoftwareEngineer #BackendDeveloper #CoreJava",
+      "on_screen_text": "",
+      "caption": "",
+      "multimodal_context": "=== SPOKEN AUDIO TRANSCRIPT ===\n; Tiyasha Mondal - ist von @ Yt gd K\n. Aspiring Data Analyst, Technical Diploma in Data ...\n17h\n\n¢ HIRING: JAVA DEVELOPER / JAVA FULL STACK\nDEVELOPER | BENGALURU\n® Location: Bengaluru\nExperience: 3-6 Years\n® Roles: Java Developer | Java Full Stack Developer\n¢@ LOOKING FOR A JAVA JOB? SEND YOUR RESUME\nDIRECTLY ON WHATSAPP!\nWe are actively connecting with Java Developers & Java Full\nStack Developers who are looking for a job change, new\nopportunity, or currently serving notice period.\nImmediate Joiners / Short Notice Candidates Preferred\n¢ KEY SKILLS:\n* Core Java / Java 8+ / Java Tl / Java 17\n+ OOPs / Collections / Multithreading\n+ Spring Boot / Spring MVC\n+ Microservices\n+ REST APIs\n+ Hibernate / JPA / Spring Data JPA\n+ SQL / MySQL / PostgreSQL\n+ Spring Security / JWT\n* Kafka\n+ Git / GitHub / Maven\n* Docker / Kubernetes / AWS\n+ JUnit / Mockito\n>: HOW TO APPLY — VERY EASY\nfi SEND YOUR UPDATED RESUME ON WHATSAPP:\n@ 9889299957 ¢\nAlong with your resume, please send:\nName:\nCurrent Location:\nTotal Experience:\nRelevant Java Experience:\nCurrent CTC:\nExpected CTC:\nNotice Period:\nLast Working Date:\nContact Number:\n~* \\f you are a Java Developer or Java Full Stack\nDeveloper with 3-6 years of experience, don't miss this\nopportunity.\nKnow someone looking for a Java job? TAG / SHARE\nthis post with them.\nfi RESUME ON WHATSAPP:\n@ 9889299957 ¢\n#JavaJobs #JavaDeveloper #JavaFullStackDeveloper\n#JavaHiring #JavaJobsBangalore #JavaJobsBengaluru\n#BengaluruJobs #BangaloreJobs #Hiring #HiringNow\n#ITJobs #TechJobs #SoftwareDeveloper\n#SoftwareEngineer #BackendDeveloper #CoreJava",
+      "has_visual_text": false,
+      "status": "ACTIVE",
+      "applied_components": [
+        "cold_email_agent.py (+1 subjects, +1 hooks, +1 CTAs)",
+        "resume_editor.py & optimizer.py (ATS tailoring rules)",
+        "keyword_tracker.py & linkedin_agent.py (+1 queries)",
+        "qa_memory.py (+1 expert Q&A answers)",
+        "system_ideas_backlog.json (+1 feature ideas)"
+      ],
+      "created_at": "2026-11-18 12:20:10",
+      "applied_at": "2026-11-18 12:20:10"
+    },
+    "reel_20261118_134253_23b563": {
+      "id": "reel_20261118_134253_23b563",
+      "source": "Naukri_JD_Company_171126018885.txt",
+      "is_url": false,
+      "title": "Python Developer Job Description and Requirements",
+      "category": "JOB_SEARCH",
+      "summary": "Job description for a Python Developer position at First American India, including key responsibilities, required qualifications, and good-to-have skills.",
+      "actionable_takeaways": [
+        "Use AI-powered development tools thoughtfully and review their output for quality and accuracy.",
+        "Familiarize yourself with the company's requirements and qualifications, and tailor your resume and application accordingly.",
+        "Highlight your experience with Python, React.js, JavaScript, and related technologies in your resume and cover letter."
+      ],
+      "system_updates": {
+        "search_queries": [
+          "site:linkedin.com Python Developer Hyderabad",
+          "site:indeed.com Python Developer Hyderabad"
+        ],
+        "screening_qa": [
+          {
+            "question": "What experience do you have with AI-powered development tools?",
+            "suggested_answer": "I have experience using AI-powered tools to support software development, and I understand the importance of reviewing and validating AI-generated outputs before use."
+          },
+          {
+            "question": "Can you explain your experience with Python and related technologies?",
+            "suggested_answer": "I have [X] years of experience building and maintaining software applications using Python, and I am confident in my ability to apply my skills to this role."
+          }
+        ],
+        "feature_ideas": [
+          {
+            "title": "AI-Powered Resume Review",
+            "description": "Develop a feature that uses AI to review and suggest improvements to resumes, including highlighting relevant experience and skills.",
+            "potential_impact": "HIGH",
+            "target_module": "resume_editor"
+          },
+          {
+            "title": "Automated Job Matching",
+            "description": "Create a feature that uses natural language processing to match job descriptions with candidate resumes and skills.",
+            "potential_impact": "MEDIUM",
+            "target_module": "job_search"
+          }
+        ]
+      },
+      "transcript": "Company: \nRole: Python Developer\nRecruiter Email: vgayakwad@firstam.com\n\nJob Description:\nDear ,\n\nWe at First American India are currently looking for .Net FullStack Engineers for our office in Hyderabad.\n\nWho are we? First American (India) is a GCC (Global Capability Center) of the First American Financial Corporation (NYSE: FAF) family of companies, a proud member of the FORTUNE 500 companies and was named one of FORTUNEs 100 Best Companies to Work For in 2022. First American Financial Corporation provides comprehensive title insurance, closing/settlement, property data and technology solutions. First American (India) creates quality solutions for its customers by combining software, back office and knowledge processing operations to fulfill First American's business requirements. Our priorities are our employees, customers and shareholders - in that order. FAI has been certified a Great Place to work by Great Place to work Institute®, is a certified Best Workplaces for Women and Workplace.\n\nRole Overview\n\nWe are looking for a Software Developer with 3–5 years of experience building and maintaining software applications. The role focuses on application development across backend and user interface technologies, API integrations, and cloud-based delivery. Experience with software automation is welcome, but automation is not the primary focus of this position. The successful candidate will use AI-powered development tools thoughtfully and review their output for quality and accuracy.\n\nKey Responsibilities\n\nBuild, enhance, and maintain software applications using Python and related technologies.\n\nDevelop user interface components with React.js and JavaScript, and connect them to backend services through REST APIs.\n\nWork with relational databases and SQL to support application features and data access.\n\nContribute to code reviews, debugging, technical documentation, and day-to-day software development practices.\n\nTroubleshoot application issues with logs, monitoring tools, and development or cloud environments.\n\nSupport software build and deployment processes, including CI/CD pipelines, cloud-hosted applications, infrastructure-as-code tools, and containers.\n\nUse AI-powered tools to support development work and review and validate AI-generated outputs before use.\n\nCollaborate with teammates to deliver maintainable software and communicate technical issues and progress clearly.\n\nRequired Qualifications\n\n3–5 years of experience in software development.\n\nBachelor’s degree in Computer Science, Information Technology, or a related field, or equivalent practical experience.\n\nProficiency in Python and experience building or maintaining software applications.\n\nExperience with React.js and JavaScript for developing user interfaces.\n\nUnderstanding of REST APIs and frontend integration with backend services.\n\nFamiliarity with relational databases and SQL.\n\nExperience using Git for version control and collaborating through pull requests.\n\nKnowledge of CI/CD pipelines and software build and deployment processes.\n\nFamiliarity with cloud platforms and cloud-hosted applications.\n\nWorking knowledge of Terraform or another infrastructure-as-code tool.\n\nUnderstanding of code reviews, debugging, and documentation.\n\nAbility to troubleshoot issues using logs, monitoring tools, and application environments.\n\nUnderstanding of AI concepts and experience using AI-powered tools to support software development, with the ability to review and validate generated outputs.\n\nFamiliarity with containers and tools such as Docker.\n\nStrong problem-solving, communication, and teamwork skills.\n\nGood to Have\n\nExperience with software test automation or automation frameworks.\n\nFamiliarity with Python testing tools such as pytest or UI automation tools such as Playwright or Selenium.\n\nExperience writing unit, integration, or end-to-end tests.\n\nEducation & Good to Have\n\n- Bachelor’s or Master’s degree in Computer Science, Engineering, or related field.\n- Frontend experience with modern frameworks is a plus.\n\nIf you are interested in exploring the above opportunity please do share your updated resume to vgayakwad@firstam.com with the below details:\n\nTotal & Relevant experience :\n\nCurrent CTC :\n\nExpected CTC :\n\nNotice Period :\n\nRegards,\n\nVijaya",
+      "on_screen_text": "",
+      "caption": "",
+      "multimodal_context": "=== SPOKEN AUDIO TRANSCRIPT ===\nCompany: \nRole: Python Developer\nRecruiter Email: vgayakwad@firstam.com\n\nJob Description:\nDear ,\n\nWe at First American India are currently looking for .Net FullStack Engineers for our office in Hyderabad.\n\nWho are we? First American (India) is a GCC (Global Capability Center) of the First American Financial Corporation (NYSE: FAF) family of companies, a proud member of the FORTUNE 500 companies and was named one of FORTUNEs 100 Best Companies to Work For in 2022. First American Financial Corporation provides comprehensive title insurance, closing/settlement, property data and technology solutions. First American (India) creates quality solutions for its customers by combining software, back office and knowledge processing operations to fulfill First American's business requirements. Our priorities are our employees, customers and shareholders - in that order. FAI has been certified a Great Place to work by Great Place to work Institute®, is a certified Best Workplaces for Women and Workplace.\n\nRole Overview\n\nWe are looking for a Software Developer with 3–5 years of experience building and maintaining software applications. The role focuses on application development across backend and user interface technologies, API integrations, and cloud-based delivery. Experience with software automation is welcome, but automation is not the primary focus of this position. The successful candidate will use AI-powered development tools thoughtfully and review their output for quality and accuracy.\n\nKey Responsibilities\n\nBuild, enhance, and maintain software applications using Python and related technologies.\n\nDevelop user interface components with React.js and JavaScript, and connect them to backend services through REST APIs.\n\nWork with relational databases and SQL to support application features and data access.\n\nContribute to code reviews, debugging, technical documentation, and day-to-day software development practices.\n\nTroubleshoot application issues with logs, monitoring tools, and development or cloud environments.\n\nSupport software build and deployment processes, including CI/CD pipelines, cloud-hosted applications, infrastructure-as-code tools, and containers.\n\nUse AI-powered tools to support development work and review and validate AI-generated outputs before use.\n\nCollaborate with teammates to deliver maintainable software and communicate technical issues and progress clearly.\n\nRequired Qualifications\n\n3–5 years of experience in software development.\n\nBachelor’s degree in Computer Science, Information Technology, or a related field, or equivalent practical experience.\n\nProficiency in Python and experience building or maintaining software applications.\n\nExperience with React.js and JavaScript for developing user interfaces.\n\nUnderstanding of REST APIs and frontend integration with backend services.\n\nFamiliarity with relational databases and SQL.\n\nExperience using Git for version control and collaborating through pull requests.\n\nKnowledge of CI/CD pipelines and software build and deployment processes.\n\nFamiliarity with cloud platforms and cloud-hosted applications.\n\nWorking knowledge of Terraform or another infrastructure-as-code tool.\n\nUnderstanding of code reviews, debugging, and documentation.\n\nAbility to troubleshoot issues using logs, monitoring tools, and application environments.\n\nUnderstanding of AI concepts and experience using AI-powered tools to support software development, with the ability to review and validate generated outputs.\n\nFamiliarity with containers and tools such as Docker.\n\nStrong problem-solving, communication, and teamwork skills.\n\nGood to Have\n\nExperience with software test automation or automation frameworks.\n\nFamiliarity with Python testing tools such as pytest or UI automation tools such as Playwright or Selenium.\n\nExperience writing unit, integration, or end-to-end tests.\n\nEducation & Good to Have\n\n- Bachelor’s or Master’s degree in Computer Science, Engineering, or related field.\n- Frontend experience with modern frameworks is a plus.\n\nIf you are interested in exploring the above opportunity please do share your updated resume to vgayakwad@firstam.com with the below details:\n\nTotal & Relevant experience :\n\nCurrent CTC :\n\nExpected CTC :\n\nNotice Period :\n\nRegards,\n\nVijaya",
+      "has_visual_text": false,
+      "status": "ACTIVE",
+      "applied_components": [
+        "keyword_tracker.py & linkedin_agent.py (+2 queries)",
+        "qa_memory.py (+2 expert Q&A answers)",
+        "system_ideas_backlog.json (+2 feature ideas)"
+      ],
+      "created_at": "2026-11-18 13:43:13",
+      "applied_at": "2026-11-18 13:43:13"
+    },
+    "reel_20261119_103723_3a2034": {
+      "id": "reel_20261119_103723_3a2034",
+      "source": "https://www.instagram.com/reel/DcK5-MmRN0w/?hvrq=MW82b211dGpnMmZxaA==",
+      "is_url": true,
+      "title": "Video by ritudecoded — General Strategy",
+      "category": "GENERAL_STRATEGY",
+      "summary": "Discover underrated companies in various sectors, including government, employment, and international jobs.",
+      "actionable_takeaways": [],
+      "system_updates": {
+        "search_queries": [
+          "site:allstate.com jobs",
+          "site:allstate.com entry-level jobs",
+          "site:allstate.com starting salary"
+        ],
+        "feature_ideas": [
+          {
+            "title": "Underrated Companies Search Feature",
+            "description": "Expand the system to include a search feature for underrated companies in various sectors.",
+            "potential_impact": "MEDIUM",
+            "target_module": "linkedin"
+          }
+        ]
+      },
+      "transcript": "(On-Screen Video Text Only): : co oz\n; SOORLD ©\n’ WT yaks) (Hedy )\nA tls AL be i\nty AVA\n\\ e 7 St dx A\na WANE ae\nti \" ANE a\nwi Fi\nmill\nFB 'on®\n\\ Sewn\n...",
+      "on_screen_text": ": co oz\n; SOORLD ©\n’ WT yaks) (Hedy )\nA tls AL be i\nty AVA\n\\ e 7 St dx A\na WANE ae\nti \" ANE a\nwi Fi\nmill\nFB 'on®\n\\ Sewn\nerie ) ) (\nat & ZS\nSUS argv. ,\n& NF ee =\nS (ae lee\ny oe St _ ele\n| (o8 oy\nwe Ce)\n| ne, BS\nANP, SE 8\n\\ il AW aX\na 1 Tt.\nA he r\n, ay ee. F\nWEARS VAY a.\n| gy te\na i % iS \"4 = 4\nseven\nconceal\nranngnenena\n. 3M OM gunmen\"\npannnnsoenenel\nAis, Dh sasncnnoaeeell\nwa wg ' \" nonmamaenmnel\nom ie ry - PPT Tt Le Lolalaelidel\nWty ? 4 PPT Tl elilnleleheh\n, i ‘ = tonenongnnnem\nSM ANNUAL ‘SD\n#4 ( START C SALARY |\nfi = Ww\nPEC NIERNSHIOca\nDe NTERNSHIDSEEmE\nENTRY-LEVEL\nASTER\n_@) Allstate\n| si Ss\nSTARTING ‘SALARY fe\nWe, til ”\n@aitstate 8\nJoin the team\nSearch Results Open Jobs\nHow , 4\nSak a e\nNt ae ae\na i * ote SE “es\n. ‘BA Sar vA\n4 FF Fy: A —\ncA ex \\e —s\nCATER ol\nWa te AND\nLu pane Xe Se 7} WV Le\n{ *) ty, t a, Sf i\nF NW Rv nes\nye ae ANE\nwe ey AY\n“29 ,) ine\n| i: m4 a\nue on } \\ s\n‘%\\ ‘3 ty, “SY 2 v i\n\"hy oy id\n%, PY pias\ngqeaen gt rT\ni, Ce se |\npoy oi ae:\nSTARTING’ SALARY =.\na ' : ge GY\nwi Sh ~ ras",
+      "caption": "World's Underrated Companies😍😍\n\n#government #employment #internationaljobs #mncgroup #jobsinindia",
+      "multimodal_context": "=== SPOKEN AUDIO TRANSCRIPT ===\n(On-Screen Video Text Only): : co oz\n; SOORLD ©\n’ WT yaks) (Hedy )\nA tls AL be i\nty AVA\n\\ e 7 St dx A\na WANE ae\nti \" ANE a\nwi Fi\nmill\nFB 'on®\n\\ Sewn\n...\n\n=== ON-SCREEN VIDEO TEXT & SLIDES (OCR) ===\n: co oz\n; SOORLD ©\n’ WT yaks) (Hedy )\nA tls AL be i\nty AVA\n\\ e 7 St dx A\na WANE ae\nti \" ANE a\nwi Fi\nmill\nFB 'on®\n\\ Sewn\nerie ) ) (\nat & ZS\nSUS argv. ,\n& NF ee =\nS (ae lee\ny oe St _ ele\n| (o8 oy\nwe Ce)\n| ne, BS\nANP, SE 8\n\\ il AW aX\na 1 Tt.\nA he r\n, ay ee. F\nWEARS VAY a.\n| gy te\na i % iS \"4 = 4\nseven\nconceal\nranngnenena\n. 3M OM gunmen\"\npannnnsoenenel\nAis, Dh sasncnnoaeeell\nwa wg ' \" nonmamaenmnel\nom ie ry - PPT Tt Le Lolalaelidel\nWty ? 4 PPT Tl elilnleleheh\n, i ‘ = tonenongnnnem\nSM ANNUAL ‘SD\n#4 ( START C SALARY |\nfi = Ww\nPEC NIERNSHIOca\nDe NTERNSHIDSEEmE\nENTRY-LEVEL\nASTER\n_@) Allstate\n| si Ss\nSTARTING ‘SALARY fe\nWe, til ”\n@aitstate 8\nJoin the team\nSearch Results Open Jobs\nHow , 4\nSak a e\nNt ae ae\na i * ote SE “es\n. ‘BA Sar vA\n4 FF Fy: A —\ncA ex \\e —s\nCATER ol\nWa te AND\nLu pane Xe Se 7} WV Le\n{ *) ty, t a, Sf i\nF NW Rv nes\nye ae ANE\nwe ey AY\n“29 ,) ine\n| i: m4 a\nue on } \\ s\n‘%\\ ‘3 ty, “SY 2 v i\n\"hy oy id\n%, PY pias\ngqeaen gt rT\ni, Ce se |\npoy oi ae:\nSTARTING’ SALARY =.\na ' : ge GY\nwi Sh ~ ras\n\n=== REEL POST CAPTION & NOTES ===\nWorld's Underrated Companies😍😍\n\n#government #employment #internationaljobs #mncgroup #jobsinindia",
+      "has_visual_text": true,
+      "status": "ACTIVE",
+      "applied_components": [
+        "keyword_tracker.py & linkedin_agent.py (+3 queries)",
+        "system_ideas_backlog.json (+1 feature ideas)"
+      ],
+      "created_at": "2026-11-19 10:37:48",
+      "applied_at": "2026-11-19 10:37:48"
+    },
+    "reel_20261120_100928_43ac8b": {
+      "id": "reel_20261120_100928_43ac8b",
+      "source": "Naukri_JD_Company_171126018358.txt",
+      "is_url": false,
+      "title": "Reel Strategy: Cold Email",
+      "category": "COLD_EMAIL",
+      "summary": "=== SPOKEN AUDIO TRANSCRIPT ===",
+      "actionable_takeaways": [
+        "=== SPOKEN AUDIO TRANSCRIPT ===",
+        "Role: Product Development Engineer,Java |Spring Boot | Microservices|Mongodb",
+        "Recruiter Email: schandola@avexasystems",
+        "Job Description:"
+      ],
+      "system_updates": {
+        "cold_email_subjects": [
+          "re looking for engineers who don"
+        ],
+        "cold_email_hooks": [],
+        "cold_email_cta": [
+          "Would you be open to a brief 5-minute introductory call this week?"
+        ],
+        "resume_power_verbs": [],
+        "resume_bullet_formula": "Accomplished [X] by implementing [Y], resulting in [Z] latency reduction",
+        "resume_ats_rules": [],
+        "search_queries": [],
+        "screening_qa": [],
+        "feature_ideas": []
+      },
+      "transcript": "Company: \nRole: Product Development Engineer,Java |Spring Boot | Microservices|Mongodb\nRecruiter Email: schandola@avexasystems.in\n\nJob Description:\nNot Just Another Java Developer Role.\n\nThink Beyond Code. Design Solutions. Engineer Products.\n\nAt Avexa Systems, we're building next-generation intelligent digital platforms that connect people, processes, data, and technology across Healthcare and Energy ecosystems.\n\nOur products, Avexa OneCare and Avexa OneEnergy, are designed to solve complex, real-world challenges through intelligent workflows, scalable SaaS architecture, and connected digital experiences.\n\nWe're looking for engineers who don't just ask, \"What should I code?\" but also ask:\n\nWhy does this problem exist?\nWhat's the simplest, most effective solution?\nWhich algorithm or data structure fits best?\nHow will this design behave at scale?\nCan we make this product simpler, faster, and more reliable?\n\nIf you enjoy turning ambiguous problems into elegant engineering solutions, we'd like to meet you.\n\nWhat You'll Build\n\n\n\n\nYou'll work on real product capabilities, not just isolated development tasks.\n\n1. Intelligent Product Capabilities\n\nDesign algorithms, business rules, decision engines, and workflow orchestration.\nTranslate complex product requirements into efficient, reusable software components.\nDevelop intelligent processing, validation, and automation capabilities.\n\n2. Scalable Backend Engineering\n\nBuild high-performance services using Java and Spring Boot.\nDesign REST APIs, microservices, and event-driven integrations.\nEngineer reliable, secure, and maintainable backend systems.\n\n3. Data-Driven Product Engineering\n\nDesign MongoDB document models, queries, indexes, and aggregation pipelines.\nSolve complex data-processing and retrieval challenges.\nOptimize application performance, data consistency, and scalability.\n\n4. Engineering Design & Problem Solving\n\nApply data structures, algorithms, OOP, OOAD/OOMD, and SOLID principles.\nEvaluate design alternatives and make practical engineering trade-offs.\nDesign reusable components that support evolving product requirements.\n\n5. End-to-End Product Ownership\n\nParticipate in problem discovery, solution design, implementation, testing, and deployment.\nCollaborate with product managers, architects, designers, and QA engineers.\nDebug complex issues and continuously improve product quality.\n\n\n\nWhat Makes You a Great Fit?\n\nYou think like a problem solver.\n\nYou can break down complex problems, identify constraints, compare approaches, and develop efficient solutions.\n\nYou understand engineering fundamentals.\n\nYou have strong foundations in Core Java, object-oriented programming, data structures, algorithms, and software design.\n\nYou can build production-ready systems.\n\nYou have hands-on experience with Spring Boot, microservices, REST APIs, and MongoDB.\n\nYou care about how products work.\n\nYou think about performance, reliability, usability, maintainability, and the long-term consequences of engineering decisions.\n\nYou take ownership.\n\nYou don't stop at getting the code to compile. You test, debug, improve, and help deliver a working product.\n\nYour Core Engineering Toolkit\n\n\n\n\nMust Have\n\nJava 17+, Core Java, Collections, Streams, Concurrency\nSpring Boot, Spring MVC, Spring Data\nREST API Design and Microservices\nMongoDB Data Modeling, Queries, Indexing, Aggregation\nData Structures and Algorithms\nAnalytical Problem Solving and Algorithm Design\nObject-Oriented Design, SOLID Principles, Design Patterns\nJUnit, Mockito, Git, Maven\n\n\n\nGood to Have\n\nPostgreSQL and SQL\nKafka and Event-Driven Architecture\nDocker, Kubernetes, CI/CD\nAWS or Azure\nRedis and Caching Strategies\nDistributed Systems and Multi-Tenant SaaS\nAI-Assisted Engineering Tools\nHealthcareTech, EnergyTech, or IoT Domain Experience\n\n\n\nWhy Avexa?\n\nBuild Products, Not Just Features.\n\nContribute to proprietary digital platforms with long-term product roadmaps.\n\nSolve Meaningful Problems.\n\nWork on challenges involving healthcare journeys, connected infrastructure, data intelligence, and enterprise workflows.\n\nGrow as a Product Engineer.\n\nDevelop deeper expertise in algorithm design, software architecture, distributed systems, and intelligent applications.\n\nOwn What You Build.\n\nTake responsibility for engineering outcomes, from solution design to working software.\n\nWork Close to Product Decisions.\n\nCollaborate directly with product and engineering leadership in an environment where thoughtful technical contributions matter.\n\nHow We Evaluate Engineers\n\nWe value engineering ability over memorized definitions.\n\nExpect discussions and practical exercises covering:\n\nProblem decomposition and algorithm design\nCore Java programming and data structures\nSpring Boot and microservices development\nMongoDB modeling and query optimization\nObject-oriented design and technical trade-offs\nDebugging, testing, and engineering ownership\n\n\n\nReady to Build Something Meaningful?\n\nSend your resume to: schandola@avexasystems.in\n\nEmail Subject: Product Development Engineer Java Hyderabad\n\nPlease include your experience, current CTC, expected CTC, and notice period.\n\nAvexa Systems Building Unified Intelligent Platforms.\n\nThink Beyond Code. Engineer What Matters.",
+      "on_screen_text": "",
+      "caption": "",
+      "multimodal_context": "=== SPOKEN AUDIO TRANSCRIPT ===\nCompany: \nRole: Product Development Engineer,Java |Spring Boot | Microservices|Mongodb\nRecruiter Email: schandola@avexasystems.in\n\nJob Description:\nNot Just Another Java Developer Role.\n\nThink Beyond Code. Design Solutions. Engineer Products.\n\nAt Avexa Systems, we're building next-generation intelligent digital platforms that connect people, processes, data, and technology across Healthcare and Energy ecosystems.\n\nOur products, Avexa OneCare and Avexa OneEnergy, are designed to solve complex, real-world challenges through intelligent workflows, scalable SaaS architecture, and connected digital experiences.\n\nWe're looking for engineers who don't just ask, \"What should I code?\" but also ask:\n\nWhy does this problem exist?\nWhat's the simplest, most effective solution?\nWhich algorithm or data structure fits best?\nHow will this design behave at scale?\nCan we make this product simpler, faster, and more reliable?\n\nIf you enjoy turning ambiguous problems into elegant engineering solutions, we'd like to meet you.\n\nWhat You'll Build\n\n\n\n\nYou'll work on real product capabilities, not just isolated development tasks.\n\n1. Intelligent Product Capabilities\n\nDesign algorithms, business rules, decision engines, and workflow orchestration.\nTranslate complex product requirements into efficient, reusable software components.\nDevelop intelligent processing, validation, and automation capabilities.\n\n2. Scalable Backend Engineering\n\nBuild high-performance services using Java and Spring Boot.\nDesign REST APIs, microservices, and event-driven integrations.\nEngineer reliable, secure, and maintainable backend systems.\n\n3. Data-Driven Product Engineering\n\nDesign MongoDB document models, queries, indexes, and aggregation pipelines.\nSolve complex data-processing and retrieval challenges.\nOptimize application performance, data consistency, and scalability.\n\n4. Engineering Design & Problem Solving\n\nApply data structures, algorithms, OOP, OOAD/OOMD, and SOLID principles.\nEvaluate design alternatives and make practical engineering trade-offs.\nDesign reusable components that support evolving product requirements.\n\n5. End-to-End Product Ownership\n\nParticipate in problem discovery, solution design, implementation, testing, and deployment.\nCollaborate with product managers, architects, designers, and QA engineers.\nDebug complex issues and continuously improve product quality.\n\n\n\nWhat Makes You a Great Fit?\n\nYou think like a problem solver.\n\nYou can break down complex problems, identify constraints, compare approaches, and develop efficient solutions.\n\nYou understand engineering fundamentals.\n\nYou have strong foundations in Core Java, object-oriented programming, data structures, algorithms, and software design.\n\nYou can build production-ready systems.\n\nYou have hands-on experience with Spring Boot, microservices, REST APIs, and MongoDB.\n\nYou care about how products work.\n\nYou think about performance, reliability, usability, maintainability, and the long-term consequences of engineering decisions.\n\nYou take ownership.\n\nYou don't stop at getting the code to compile. You test, debug, improve, and help deliver a working product.\n\nYour Core Engineering Toolkit\n\n\n\n\nMust Have\n\nJava 17+, Core Java, Collections, Streams, Concurrency\nSpring Boot, Spring MVC, Spring Data\nREST API Design and Microservices\nMongoDB Data Modeling, Queries, Indexing, Aggregation\nData Structures and Algorithms\nAnalytical Problem Solving and Algorithm Design\nObject-Oriented Design, SOLID Principles, Design Patterns\nJUnit, Mockito, Git, Maven\n\n\n\nGood to Have\n\nPostgreSQL and SQL\nKafka and Event-Driven Architecture\nDocker, Kubernetes, CI/CD\nAWS or Azure\nRedis and Caching Strategies\nDistributed Systems and Multi-Tenant SaaS\nAI-Assisted Engineering Tools\nHealthcareTech, EnergyTech, or IoT Domain Experience\n\n\n\nWhy Avexa?\n\nBuild Products, Not Just Features.\n\nContribute to proprietary digital platforms with long-term product roadmaps.\n\nSolve Meaningful Problems.\n\nWork on challenges involving healthcare journeys, connected infrastructure, data intelligence, and enterprise workflows.\n\nGrow as a Product Engineer.\n\nDevelop deeper expertise in algorithm design, software architecture, distributed systems, and intelligent applications.\n\nOwn What You Build.\n\nTake responsibility for engineering outcomes, from solution design to working software.\n\nWork Close to Product Decisions.\n\nCollaborate directly with product and engineering leadership in an environment where thoughtful technical contributions matter.\n\nHow We Evaluate Engineers\n\nWe value engineering ability over memorized definitions.\n\nExpect discussions and practical exercises covering:\n\nProblem decomposition and algorithm design\nCore Java programming and data structures\nSpring Boot and microservices development\nMongoDB modeling and query optimization\nObject-oriented design and technical trade-offs\nDebugging, testing, and engineering ownership\n\n\n\nReady to Build Something Meaningful?\n\nSend your resume to: schandola@avexasystems.in\n\nEmail Subject: Product Development Engineer Java Hyderabad\n\nPlease include your experience, current CTC, expected CTC, and notice period.\n\nAvexa Systems Building Unified Intelligent Platforms.\n\nThink Beyond Code. Engineer What Matters.",
+      "has_visual_text": false,
+      "status": "ACTIVE",
+      "applied_components": [
+        "cold_email_agent.py (+1 subjects, +0 hooks, +0 CTAs)",
+        "resume_editor.py & optimizer.py (ATS tailoring rules)"
+      ],
+      "created_at": "2026-11-20 10:10:03",
+      "applied_at": "2026-11-20 10:10:03"
+    },
+    "reel_20261121_100855_f0f887": {
+      "id": "reel_20261121_100855_f0f887",
+      "source": "Naukri_JD_Vipany_Global_191126011538.txt",
+      "is_url": false,
+      "title": "Java Full Stack Developer Job Alert: Vipany Global",
+      "category": "JOB_SEARCH",
+      "summary": "Apply for Java Full Stack Developer role at Vipany Global, a leading enterprise business and technology solutions partner, with 5-8 years of experience and Bangalore location.",
+      "actionable_takeaways": [
+        "Search for job openings on company websites, especially for roles that match your skills and experience",
+        "Tailor your resume and cover letter to the specific job requirements and company culture",
+        "Prepare to answer common Java Full Stack Developer interview questions, such as design patterns, data structures, and system design"
+      ],
+      "system_updates": {
+        "search_queries": [
+          "site:vipanyglobal.com java full stack developer",
+          "site:vipanyglobal.com java developer bangalore"
+        ],
+        "resume_power_verbs": [
+          "Designed",
+          "Developed",
+          "Maintained"
+        ],
+        "resume_bullet_formula": "e.g. Developed [X] full stack web applications as measured by [Y] by doing [Z]",
+        "resume_ats_rules": [
+          "Use keywords from the job description in your resume, such as Java, Spring, Spring Boot, Microservices, and REST APIs"
+        ],
+        "screening_qa": [
+          {
+            "question": "What is your experience with Java and Spring?",
+            "suggested_answer": "I have [X] years of experience with Java and Spring, and I'm confident in my ability to design and develop full stack web applications."
+          },
+          {
+            "question": "Can you explain the difference between Spring and Spring Boot?",
+            "suggested_answer": "Spring is a Java-based framework for building enterprise-level applications, while Spring Boot is a subset of Spring that simplifies the development process and reduces boilerplate code."
+          }
+        ],
+        "feature_ideas": [
+          {
+            "title": "Job Matching Algorithm",
+            "description": "Develop a feature that suggests job openings based on the user's skills, experience, and location",
+            "potential_impact": "HIGH",
+            "target_module": "job_search"
+          },
+          {
+            "title": "Resume Builder",
+            "description": "Create a feature that helps users build a resume tailored to the specific job requirements and company culture",
+            "potential_impact": "MEDIUM",
+            "target_module": "resume_editor"
+          }
+        ]
+      },
+      "transcript": "Company: Vipany Global\nRole: Looking For Java Full stack Developer/5-8 years/Bangalore Location\nRecruiter Email: soundarya.g@vipanyglobal.com\n\nJob Description:\nHi,\n\nHope you are doing great!!!\n\nVipany Global Solutions Pvt Ltd.., a leading enterprise business and technology solutions partner for medium and large global customers, is seeking experienced professionals, who thrive on challenge and desire to make a real difference. With an environment of extraordinary innovation and unprecedented growth.\n\nReQ: Java Fullstack Developer\n\nLocation: Bangalore\n\nExperience: 5yrs 8 yrs\n\nInterview Mode: F2F\n\nInterview Date: 24th November 2026\n\n****************** Need resource who can join in Immediatley/ 15 days******************\n\n___\n\nKindly share resume along with below details\n\n1) First name:\n\n2) Total Experience:\n\n3) Relevant Experience:\n\n4) Current Location:\n\n5) Preferred Location:\n\n6) Notice period:\n\n7) Current CTC:\n\n8) Expected CTC:\n\n9) DOB:\n\n10) Contact Number:\n\n11) Updated Cv:\n\n12) Mention: LWD:\n\nKey Responsibilities\n\n• Design, develop, and maintain full stack web applications\n\n• Build backend services using Java, Spring, Spring Boot, Microservices and REST APIs\n\n• Develop responsive user interfaces using HTML, CSS, JavaScript, Angular\n\n• Integrate applications with databases (SQL/NoSQL)\n\n• Write clean, reusable, and efficient code\n\n• Perform unit testing and debugging\n\n• Participate in code reviews and follow best coding practices\n\n• Ensure application performance, security, and scalability\n\nRequired Skills\n\nBackend\n\n• Java (Core Java, Java 8+)\n\n• Spring, Spring Boot, Spring MVC\n\n• RESTful Web Services / Microservices\n\nFrontend\n\n• HTML5, CSS3, JavaScript\n\n• Angular\n\n• Bootstrap / Material UI\n\nDatabase\n\n• MySQL, PostgreSQL, Oracle\n\n• MongoDB (preferred)\n\nNice to Have\n\n• Experience with cloud platforms (AWS, Azure, GCP)\n\n• Knowledge of microservices architecture\n\n• Exposure to Kubernetes\n\n• Agile/Scrum methodology\n\nQualifications\n\n• Bachelor’s degree in computer science or related field\n\n• 3–9 years of experience in Java Full Stack development\n\nThanks & Regards,\n\nG Soundarya– Senior It Recruiter\n\n7702942674\n\nVipany Global solutions\n\nsoundarya.g@vipanyglobal.com",
+      "on_screen_text": "",
+      "caption": "",
+      "multimodal_context": "=== SPOKEN AUDIO TRANSCRIPT ===\nCompany: Vipany Global\nRole: Looking For Java Full stack Developer/5-8 years/Bangalore Location\nRecruiter Email: soundarya.g@vipanyglobal.com\n\nJob Description:\nHi,\n\nHope you are doing great!!!\n\nVipany Global Solutions Pvt Ltd.., a leading enterprise business and technology solutions partner for medium and large global customers, is seeking experienced professionals, who thrive on challenge and desire to make a real difference. With an environment of extraordinary innovation and unprecedented growth.\n\nReQ: Java Fullstack Developer\n\nLocation: Bangalore\n\nExperience: 5yrs 8 yrs\n\nInterview Mode: F2F\n\nInterview Date: 24th November 2026\n\n****************** Need resource who can join in Immediatley/ 15 days******************\n\n___\n\nKindly share resume along with below details\n\n1) First name:\n\n2) Total Experience:\n\n3) Relevant Experience:\n\n4) Current Location:\n\n5) Preferred Location:\n\n6) Notice period:\n\n7) Current CTC:\n\n8) Expected CTC:\n\n9) DOB:\n\n10) Contact Number:\n\n11) Updated Cv:\n\n12) Mention: LWD:\n\nKey Responsibilities\n\n• Design, develop, and maintain full stack web applications\n\n• Build backend services using Java, Spring, Spring Boot, Microservices and REST APIs\n\n• Develop responsive user interfaces using HTML, CSS, JavaScript, Angular\n\n• Integrate applications with databases (SQL/NoSQL)\n\n• Write clean, reusable, and efficient code\n\n• Perform unit testing and debugging\n\n• Participate in code reviews and follow best coding practices\n\n• Ensure application performance, security, and scalability\n\nRequired Skills\n\nBackend\n\n• Java (Core Java, Java 8+)\n\n• Spring, Spring Boot, Spring MVC\n\n• RESTful Web Services / Microservices\n\nFrontend\n\n• HTML5, CSS3, JavaScript\n\n• Angular\n\n• Bootstrap / Material UI\n\nDatabase\n\n• MySQL, PostgreSQL, Oracle\n\n• MongoDB (preferred)\n\nNice to Have\n\n• Experience with cloud platforms (AWS, Azure, GCP)\n\n• Knowledge of microservices architecture\n\n• Exposure to Kubernetes\n\n• Agile/Scrum methodology\n\nQualifications\n\n• Bachelor’s degree in computer science or related field\n\n• 3–9 years of experience in Java Full Stack development\n\nThanks & Regards,\n\nG Soundarya– Senior It Recruiter\n\n7702942674\n\nVipany Global solutions\n\nsoundarya.g@vipanyglobal.com",
+      "has_visual_text": false,
+      "status": "ACTIVE",
+      "applied_components": [
+        "resume_editor.py & optimizer.py (ATS tailoring rules)",
+        "keyword_tracker.py & linkedin_agent.py (+2 queries)",
+        "qa_memory.py (+2 expert Q&A answers)",
+        "system_ideas_backlog.json (+2 feature ideas)"
+      ],
+      "created_at": "2026-11-21 10:09:20",
+      "applied_at": "2026-11-21 10:09:20"
     }
   }
 }

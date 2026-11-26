@@ -95,6 +95,29 @@ def show_dashboard_status():
     print(f"   • Total All-Time Sends:   {total_emails}")
     print(f"   • Dispatch Window:        10:00 AM – 6:00 PM IST (Active)")
 
+    # WhatsApp Outreach Status
+    wa_queue_path = os.path.join(logs_dir, "whatsapp_leads_queue.json")
+    wa_sent_path = os.path.join(logs_dir, "whatsapp_sent_records.json")
+    wa_pending = 0
+    wa_all_time = 0
+    if os.path.exists(wa_queue_path):
+        try:
+            with open(wa_queue_path, 'r', encoding='utf-8') as f:
+                wa_pending = sum(1 for l in json.load(f).get("leads", []) if l.get("status") == "QUEUED")
+        except Exception:
+            pass
+    if os.path.exists(wa_sent_path):
+        try:
+            with open(wa_sent_path, 'r', encoding='utf-8') as f:
+                wa_all_time = len(json.load(f))
+        except Exception:
+            pass
+    wa_limit = config.get("whatsapp_outreach", {}).get("daily_send_limit", 10)
+    print(f"\n📱 WHATSAPP RECRUITER OUTREACH (whatsapp_agent.py)")
+    print(f"   • Queued WhatsApp Leads:  {wa_pending} Leads Pending Dispatch")
+    print(f"   • Total All-Time Sends:   {wa_all_time} (Daily Target: {wa_limit})")
+    print(f"   • Action Command:         python3 whatsapp_agent.py --list / --dispatch")
+
     # 2. Naukri Status
     naukri_ledger_path = os.path.join(logs_dir, "naukri_applied_jobs.json")
     naukri_today = 0
@@ -606,6 +629,8 @@ def main():
     parser.add_argument("--emails", action="store_true", help="Trigger email dropzone processor.")
     parser.add_argument("--cold-email", nargs="?", const="DISPATCH", default=None,
                         help="Ingest and dispatch direct cold outreach emails. Accepts optional image, text file, or email string. If no value provided, dispatches queued leads.")
+    parser.add_argument("--whatsapp", nargs="?", const="DISPATCH", default=None,
+                        help="Ingest and dispatch recruiter WhatsApp leads. Accepts optional image, text file, or phone string. If no value provided, dispatches queued leads.")
     parser.add_argument("--dry-run", action="store_true", help="Preview cold outreach emails without sending.")
     parser.add_argument("--all", action="store_true", help="Run complete daily cycle across all portals (including LinkedIn harvest & apply) and email.")
     parser.add_argument("--headed", action="store_true", help="Show visible Chrome browser window (default is headless/invisible).")
@@ -896,6 +921,14 @@ def main():
             else:
                 cold_email_agent.dispatch_cold_email_queue(force=True)
 
+        if args.whatsapp:
+            print("[Unified Launcher] Executing WhatsApp Recruiter Outreach Pipeline...")
+            import whatsapp_agent
+            if args.whatsapp != "DISPATCH":
+                added, skipped = whatsapp_agent.ingest_source(args.whatsapp)
+                print(f"[Unified Launcher] Enqueued {added} WhatsApp lead(s) ({skipped} skipped/duplicates).")
+            whatsapp_agent.dispatch_whatsapp_queue(dry_run=args.dry_run)
+
         if args.apply_all or args.all:
             quotas = quota_manager.get_all_quotas()
             wave_info = quotas["wave_info"]
@@ -1081,6 +1114,20 @@ def main():
                             cold_email_agent.dispatch_cold_email_queue(limit=slice_target)
                         except Exception as e:
                             print(f"[Unified Launcher] Phase 12 (Cold Emails) error (non-fatal): {e}")
+
+                    # Phase 12b: Direct WhatsApp Recruiter Outreach (Automated & Paced)
+                    wa_rem = quota_manager.get_remaining("whatsapp")
+                    if wa_rem <= 0:
+                        print(f"[Unified Launcher] [Quota-Aware] ⏭️ Skipping Phase 12b (WhatsApp): Daily safety limit of 10 reached ({quotas['portals']['whatsapp']['applied']}/10).")
+                    else:
+                        try:
+                            slice_target = quota_manager.get_wave_slice("whatsapp")
+                            print(f"\n[Unified Launcher] Phase 12b: Dispatching Direct WhatsApp Recruiter Leads (Target: {slice_target}, Remaining Today: {wa_rem})...")
+                            import whatsapp_agent
+                            # Automated Playwright dispatch with anti-ban pacing & unique spintax!
+                            whatsapp_agent.dispatch_whatsapp_queue(limit=slice_target, automated=True, dry_run=args.dry_run)
+                        except Exception as e:
+                            print(f"[Unified Launcher] Phase 12b (WhatsApp) error (non-fatal): {e}")
 
                     # Phase 13: Inbound Recruiter & Application Link Sweep
                     try:

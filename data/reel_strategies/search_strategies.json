@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_updated": "2026-11-18 10:09:04",
+  "last_updated": "2026-11-21 10:09:20",
   "boolean_queries": [
     "site:linkedin.com/in/ \"hiring\" (\"Java\" OR \"Spring Boot\") \"Bengaluru\"",
     "site:greenhouse.io \"software engineer\" \"immediate joiner\"",
@@ -82,6 +82,14 @@
     "Cbts job description java full stack developer",
     "site:advancesoftindia.com java full stack lead",
     "site:coforge.com hiring Big Data Engineer",
-    "site:coforge.com Spark Scala AWS"
+    "site:coforge.com Spark Scala AWS",
+    "site:linkedin.com OR site:glassdoor.com (Java Developer OR Java Full Stack Developer) AND (Bengaluru OR Bangalore) AND (3-6 years of experience)",
+    "site:linkedin.com Python Developer Hyderabad",
+    "site:indeed.com Python Developer Hyderabad",
+    "site:allstate.com jobs",
+    "site:allstate.com entry-level jobs",
+    "site:allstate.com starting salary",
+    "site:vipanyglobal.com java full stack developer",
+    "site:vipanyglobal.com java developer bangalore"
   ]
 }

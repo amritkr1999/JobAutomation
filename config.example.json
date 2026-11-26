@@ -522,6 +522,21 @@
     "sync_interval_minutes": 15,
     "sync_lookback_days": 14
   },
+  "whatsapp_outreach": {
+    "active_hours_end": 18,
+    "active_hours_start": 10,
+    "auto_attach_resume": true,
+    "browser_profile_dir": "/Users/amrit/Documents/JobAutomation/browser_profile/whatsapp",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "daily_send_limit": 10,
+    "default_resume_path": "/Users/amrit/Documents/JobAutomation/output/AMRIT_KUMAR_Resume.pdf",
+    "enabled": true,
+    "headless": true,
+    "max_delay_seconds": 180,
+    "min_delay_seconds": 90,
+    "mode": "automated",
+    "send_telegram_alerts": true
+  },
   "self_learning": {
     "ab_testing_enabled": true,
     "enabled": true,

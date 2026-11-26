@@ -1285,9 +1285,9 @@ def create_tailored_pdf_cover_letter(output_path, profile, jd_info, alignment_pa
             "RESTful APIs, and relational database schemas (PostgreSQL, MySQL) for national-scale platforms like <b>Medplat</b> and <b>VendorInfra</b>—reducing server response times by 35% and query latency by 40%."
         )
 
-    email_addr = profile.get('email', 'candidate@example.com')
-    linkedin_url = profile.get('linkedin', 'https://linkedin.com/in/yourprofile')
-    github_url = profile.get('github', 'https://github.com/yourusername')
+    email_addr = profile.get('email', 'amrit.399.ak@gmail.com')
+    linkedin_url = profile.get('linkedin', 'https://linkedin.com/in/AmritKumar')
+    github_url = profile.get('github', 'https://github.com/amritkr1999')
 
     story = []
     story.append(Paragraph(profile.get("full_name", "AMRIT KUMAR").upper(), name_style))
@@ -1607,10 +1607,10 @@ def compose_formal_email_body(profile, company_name, job_title, alignment_para, 
     reqs = jd_info.get('key_requirements') or ["Java 21", "Spring Boot 3", "Microservices", "React 19", "AWS"]
     skills_line = ", ".join(reqs[:4])
     notice = profile.get('notice_period', '7 days')
-    phone = profile.get('phone', '+91-9876543210')
-    email_addr = profile.get('email', 'candidate@example.com')
-    linkedin = profile.get('linkedin', 'https://linkedin.com/in/yourprofile')
-    github = profile.get('github', 'https://github.com/yourusername')
+    phone = profile.get('phone', '+91-8789498334')
+    email_addr = profile.get('email', 'amrit.399.ak@gmail.com')
+    linkedin = profile.get('linkedin', 'https://linkedin.com/in/AmritKumar')
+    github = profile.get('github', 'https://github.com/amritkr1999')
     full_name = profile.get('full_name', 'Amrit Kumar')
 
     if variant_id == "variant_b":
@@ -1687,9 +1687,9 @@ def compose_html_email_body(plain_body, profile):
     escaped = re.sub(r'•\s*([^:\n]+):', r'&bull; <strong>\1:</strong>', escaped)
     escaped = escaped.replace('Quick Profile Snapshot:', '<strong>Quick Profile Snapshot:</strong>')
 
-    linkedin = profile.get('linkedin', 'https://linkedin.com/in/yourprofile')
-    github = profile.get('github', 'https://github.com/yourusername')
-    email_addr = profile.get('email', 'candidate@example.com')
+    linkedin = profile.get('linkedin', 'https://linkedin.com/in/AmritKumar')
+    github = profile.get('github', 'https://github.com/amritkr1999')
+    email_addr = profile.get('email', 'amrit.399.ak@gmail.com')
 
     if linkedin:
         escaped = escaped.replace(linkedin, f'<a href="{linkedin}" style="color:#1A2B4C;text-decoration:none;">{linkedin}</a>')

@@ -815,6 +815,36 @@ def ingest_source(source_path_or_text, config=None, logs_dir=None):
         extracted_emails = extract_emails_from_text(str(source_path_or_text))
         source_label = "Raw Text Input"
         
+    # Also extract any recruiter WhatsApp / phone numbers and forward to whatsapp_agent
+    try:
+        import whatsapp_agent
+        raw_content = ""
+        if isinstance(source_path_or_text, str) and os.path.exists(source_path_or_text):
+            if not os.path.isdir(source_path_or_text):
+                ext = os.path.splitext(source_path_or_text)[1].lower()
+                if ext in ['.png', '.jpg', '.jpeg', '.webp']:
+                    _, raw_content = extract_emails_from_image(source_path_or_text)
+                else:
+                    try:
+                        with open(source_path_or_text, 'r', encoding='utf-8', errors='ignore') as fp:
+                            raw_content = fp.read()
+                    except Exception:
+                        pass
+        else:
+            raw_content = str(source_path_or_text)
+
+        if raw_content:
+            phones = whatsapp_agent.extract_phone_numbers(raw_content)
+            for p in phones:
+                whatsapp_agent.enqueue_whatsapp_lead(
+                    phone_raw=p["raw"],
+                    source=f"cold_email_ingest:{source_label}",
+                    notes=p.get("context", ""),
+                    config=config
+                )
+    except Exception as wa_err:
+        logging.debug(f"[ColdEmail] WhatsApp lead extraction note: {wa_err}")
+
     # Deduplicate extracted list
     unique_emails = list(dict.fromkeys(extracted_emails))
     if not unique_emails:

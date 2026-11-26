@@ -223,11 +223,11 @@ def resolve_form_question(label_text: str, subtitle_text: str = "", field_type: 
 
     # 4. URLs & Profiles
     if "linkedin" in clean_label:
-        return profile.get("linkedin", "https://linkedin.com/in/yourprofile")
+        return profile.get("linkedin", "https://linkedin.com/in/AmritKumar")
     if "github" in clean_label:
-        return profile.get("github", "https://github.com/yourusername")
+        return profile.get("github", "https://github.com/amritkr1999")
     if any(k in clean_label for k in ("portfolio", "website", "personal site", "project link")):
-        return profile.get("github", "https://github.com/yourusername")
+        return profile.get("github", "https://github.com/amritkr1999")
 
     # 5. Current Location / City / State
     if any(k in clean_label for k in ("current location", "current city", "base location", "where are you located", "city you live", "present location")) or clean_label == "current location":

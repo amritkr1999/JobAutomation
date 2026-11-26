@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "last_updated": "2026-11-18 10:09:05",
-  "total_ideas": 57,
+  "last_updated": "2026-11-21 10:09:20",
+  "total_ideas": 63,
   "ideas": [
     {
       "id": "idea_20261030_234341_0",
@@ -629,6 +629,72 @@
       "target_module": "resume_editor",
       "status": "BACKLOG",
       "created_at": "2026-11-18 10:09:05"
+    },
+    {
+      "id": "idea_20261118_122010_0",
+      "reel_id": "reel_20261118_121947_be8a8a",
+      "source_title": "Java Developer / Java Full Stack Developer Job Opportunity in Bengaluru",
+      "title": "Resume Parser and Formatter",
+      "description": "Automatically parse resumes and format them according to the required information and ATS rules",
+      "potential_impact": "HIGH",
+      "target_module": "resume_editor",
+      "status": "BACKLOG",
+      "created_at": "2026-11-18 12:20:10"
+    },
+    {
+      "id": "idea_20261118_134313_0",
+      "reel_id": "reel_20261118_134253_23b563",
+      "source_title": "Python Developer Job Description and Requirements",
+      "title": "AI-Powered Resume Review",
+      "description": "Develop a feature that uses AI to review and suggest improvements to resumes, including highlighting relevant experience and skills.",
+      "potential_impact": "HIGH",
+      "target_module": "resume_editor",
+      "status": "BACKLOG",
+      "created_at": "2026-11-18 13:43:13"
+    },
+    {
+      "id": "idea_20261118_134313_1",
+      "reel_id": "reel_20261118_134253_23b563",
+      "source_title": "Python Developer Job Description and Requirements",
+      "title": "Automated Job Matching",
+      "description": "Create a feature that uses natural language processing to match job descriptions with candidate resumes and skills.",
+      "potential_impact": "MEDIUM",
+      "target_module": "job_search",
+      "status": "BACKLOG",
+      "created_at": "2026-11-18 13:43:13"
+    },
+    {
+      "id": "idea_20261119_103748_0",
+      "reel_id": "reel_20261119_103723_3a2034",
+      "source_title": "Video by ritudecoded — General Strategy",
+      "title": "Underrated Companies Search Feature",
+      "description": "Expand the system to include a search feature for underrated companies in various sectors.",
+      "potential_impact": "MEDIUM",
+      "target_module": "linkedin",
+      "status": "BACKLOG",
+      "created_at": "2026-11-19 10:37:48"
+    },
+    {
+      "id": "idea_20261121_100920_0",
+      "reel_id": "reel_20261121_100855_f0f887",
+      "source_title": "Java Full Stack Developer Job Alert: Vipany Global",
+      "title": "Job Matching Algorithm",
+      "description": "Develop a feature that suggests job openings based on the user's skills, experience, and location",
+      "potential_impact": "HIGH",
+      "target_module": "job_search",
+      "status": "BACKLOG",
+      "created_at": "2026-11-21 10:09:20"
+    },
+    {
+      "id": "idea_20261121_100920_1",
+      "reel_id": "reel_20261121_100855_f0f887",
+      "source_title": "Java Full Stack Developer Job Alert: Vipany Global",
+      "title": "Resume Builder",
+      "description": "Create a feature that helps users build a resume tailored to the specific job requirements and company culture",
+      "potential_impact": "MEDIUM",
+      "target_module": "resume_editor",
+      "status": "BACKLOG",
+      "created_at": "2026-11-21 10:09:20"
     }
   ]
 }

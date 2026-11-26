@@ -293,6 +293,21 @@ def get_all_quotas(today_str=None):
             "limit": config.get("cold_email", {}).get("daily_send_limit", 25),
             "run_limit": 15,
             "enabled": config.get("cold_email", {}).get("enabled", True),
+        },
+
+        # Direct WhatsApp Recruiter Outreach
+        {
+            "key": "whatsapp",
+            "name": "WhatsApp Outreach",
+            "short_name": "WhatsApp",
+            "category": "Direct Outreach",
+            "icon": "📱",
+            "file": "whatsapp_sent_records.json",
+            "obj_key": None,
+            "status_keys": None,
+            "limit": config.get("whatsapp_outreach", {}).get("daily_send_limit", 10),
+            "run_limit": 2,  # Maximum 2 per wave for anti-spam pacing
+            "enabled": config.get("whatsapp_outreach", {}).get("enabled", True),
         }
     ]
 
@@ -321,6 +336,22 @@ def get_all_quotas(today_str=None):
                             1 for v in sdata.values()
                             if str(v.get("sent_at", "")).startswith(today_str)
                             and v.get("application_type") == "COLD_OUTREACH"
+                        )
+                except Exception:
+                    pass
+        elif key == "whatsapp":
+            wa_path = os.path.join(LOGS_DIR, "whatsapp_sent_records.json")
+            applied = 0
+            total_history = 0
+            if os.path.exists(wa_path):
+                try:
+                    with open(wa_path, 'r', encoding='utf-8') as f:
+                        wdata = json.load(f)
+                        total_history = len(wdata)
+                        applied = sum(
+                            1 for v in wdata.values()
+                            if str(v.get("sent_at", "")).startswith(today_str)
+                            and v.get("status") in ("SENT", "ACTION_DISPATCHED")
                         )
                 except Exception:
                     pass
@@ -452,7 +483,7 @@ def format_quota_progress_markdown():
     categories = {
         "Enterprise & ATS Systems": ["greenhouse", "workday", "forms"],
         "Top Job Boards": ["naukri", "instahyre", "linkedin", "linkedin_connect", "indeed", "shine", "wellfound", "foundit", "jobgether"],
-        "Direct Cold Email": ["cold_email"]
+        "Direct Cold Outreach": ["cold_email", "whatsapp"]
     }
 
     lines = []

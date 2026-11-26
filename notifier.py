@@ -693,6 +693,40 @@ class UnifiedNotifier:
             logging.error(f"[Notifier] Error sending weekly report: {e}")
         return False
 
+    def send_whatsapp_lead_alert(self, lead: dict):
+        """Dispatches an interactive Telegram alert with a direct 1-tap WhatsApp chat link."""
+        if not self.tg.is_configured():
+            return False
+        try:
+            company = lead.get("company_name") or "Hiring Organization"
+            role = lead.get("role") or "Technical Role"
+            recruiter = lead.get("recruiter_name") or "Recruiter"
+            phone = lead.get("phone_formatted") or lead.get("phone_clean")
+            wa_url = lead.get("wa_me_url", "")
+
+            msg = (
+                f"💬 *NEW RECRUITER WHATSAPP LEAD!*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"💼 *Role:* `{role}`\n"
+                f"🏢 *Company:* `{company}`\n"
+                f"👤 *Contact:* `{recruiter}`\n"
+                f"📱 *Phone:* `{phone}`\n"
+                f"🏷️ *Source:* `{lead.get('source', 'Job Post')}`\n\n"
+                f"👇 *Tap below to launch WhatsApp and send your pitch with one click:*"
+            )
+
+            reply_markup = {
+                "inline_keyboard": [
+                    [{"text": "💬 Open WhatsApp & Send Pitch", "url": wa_url}],
+                    [{"text": "🌐 Open Job Dashboard", "url": "http://127.0.0.1:8765"}]
+                ]
+            }
+
+            return self.tg.send_message(msg, reply_markup=reply_markup)
+        except Exception as e:
+            logging.error(f"[Notifier] Failed to send WhatsApp lead alert: {e}")
+            return False
+
 
 # Global singleton instance for easy import
 _global_notifier = None
@@ -1102,6 +1136,25 @@ def run_telegram_bot_listener():
 
                     elif text.lower() in ("/pipeline", "/crm", "/track", "pipeline", "crm", "track"):
                         get_notifier().send_crm_report()
+
+                    elif text.lower() in ("/whatsapp", "/wa", "whatsapp", "wa"):
+                        try:
+                            import whatsapp_agent
+                            q_data = whatsapp_agent.load_queue()
+                            leads = q_data.get("leads", [])
+                            pending = [l for l in leads if l.get("status") == "QUEUED"]
+                            if not pending:
+                                tg.send_message("📱 *WhatsApp Recruiter Outreach*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎉 No pending WhatsApp leads in queue! Drop job screenshots into dropzone to harvest recruiter phone numbers.")
+                            else:
+                                msg = f"📱 *Pending WhatsApp Recruiter Leads ({len(pending)})*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                                rows = []
+                                for idx, l in enumerate(pending[:4], 1):
+                                    msg += f"{idx}. *[{l.get('company_name') or 'Hiring Co'}]* `{l.get('role')}`\n   📱 `{l.get('phone_formatted')}` | Recruiter: {l.get('recruiter_name') or 'Hiring Team'}\n"
+                                    rows.append([{"text": f"💬 Chat #{idx}: {l.get('company_name')[:18]}", "url": l.get("wa_me_url")}])
+                                rows.append([{"text": "🌐 Open Job Dashboard", "url": "http://127.0.0.1:8765"}])
+                                tg.send_message(msg, reply_markup={"inline_keyboard": rows})
+                        except Exception as e:
+                            tg.send_message(f"⚠️ Error loading WhatsApp queue: {e}")
 
                     elif text.lower() in ("/inbound", "/sweep", "inbound", "sweep"):
                         tg.send_message("📥 *Starting Inbound Recruiter Sweep...*\n_Checking Gmail INBOX, extracting recruiter links, and preparing context-aware reply drafts._")

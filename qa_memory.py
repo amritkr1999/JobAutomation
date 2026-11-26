@@ -65,9 +65,9 @@ def load_qa_memory() -> Dict[str, Any]:
             "are you open to relocation": "Yes",
             "willing to relocate": "Yes",
             "how did you hear about this job": "LinkedIn",
-            "linkedin profile": "https://linkedin.com/in/yourprofile",
-            "github profile": "https://github.com/yourusername",
-            "portfolio website": "https://github.com/yourusername"
+            "linkedin profile": "https://linkedin.com/in/AmritKumar",
+            "github profile": "https://github.com/amritkr1999",
+            "portfolio website": "https://github.com/amritkr1999"
         },
         "patterns": {
             # Keyword/phrase mappings
@@ -227,8 +227,7 @@ def recall_answer(question: str, available_options: Optional[List[str]] = None) 
         ans = exact_map[norm_q]
         if available_options:
             matched = match_best_option(ans, available_options)
-            if matched:
-                return matched
+            return matched
         return ans
 
     # 2. Substring matching against exact questions
@@ -236,8 +235,7 @@ def recall_answer(question: str, available_options: Optional[List[str]] = None) 
         if len(saved_q) >= 12 and (saved_q in norm_q or norm_q in saved_q):
             if available_options:
                 matched = match_best_option(ans, available_options)
-                if matched:
-                    return matched
+                return matched
             return ans
 
     # 3. Pattern / keyword phrase matching
@@ -250,8 +248,7 @@ def recall_answer(question: str, available_options: Optional[List[str]] = None) 
         if p_norm in norm_q:
             if available_options:
                 matched = match_best_option(ans, available_options)
-                if matched:
-                    return matched
+                return matched
             return ans
 
         # Multi-word token inclusion (for natural variations like "preferred first name")
@@ -260,8 +257,7 @@ def recall_answer(question: str, available_options: Optional[List[str]] = None) 
             if all(w in q_words for w in p_words):
                 if available_options:
                     matched = match_best_option(ans, available_options)
-                    if matched:
-                        return matched
+                    return matched
                 return ans
 
     return None

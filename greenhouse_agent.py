@@ -369,9 +369,9 @@ def answer_custom_question(label_text, config, available_options=None):
 
     # 1. LinkedIn & Social URLs
     if "linkedin" in text:
-        return profile.get("linkedin", "https://linkedin.com/in/yourprofile")
+        return profile.get("linkedin", "https://linkedin.com/in/AmritKumar")
     if any(k in text for k in ("github", "git hub", "repository", "portfolio", "personal website", "website")):
-        return profile.get("github", "https://github.com/yourusername")
+        return profile.get("github", "https://github.com/amritkr1999")
 
     # 2. Current / Past Company
     if any(k in text for k in ("current company", "most recent company", "recent company", "name of your current", "current employer", "present organization")):

@@ -182,6 +182,34 @@ graph TD
 
 ---
 
+### A.2 WhatsApp Recruiter Outreach Engine ([`whatsapp_agent.py`](file:///Users/amrit/Documents/JobAutomation/whatsapp_agent.py))
+- **Purpose**: Harvest recruiter and HR WhatsApp numbers from LinkedIn posts, Naukri recruiter cards, dropzone screenshots, and text dumps, craft high-converting concise pitches, and dispatch messages with tailored resume PDFs.
+- **Why It Matters**: Many high-urgency hiring posts across India, APAC, and the GCC region say *"Urgent opening! WhatsApp your CV to +91-XXXXX"* without providing an email. This engine turns those posts directly into warm recruiter conversations.
+- **Core Capabilities**:
+  - **Contextual Phone Extraction**: Robust regex and semantic intelligence detects Indian (+91), UAE (+971), Saudi (+966), and international formats, normalizing to E.164 canonical digits (`917011784220`).
+  - **Company & Recruiter Name Cleaning**: Strips out noise strings (e.g. *"Email CV at hr@..."* or *"WhatsApp -+91..."*) to preserve clean corporate names for the pitch.
+  - **Role-Adaptive Pitch Copywriting**: Generates crisp, mobile-friendly WhatsApp pitches highlighting 3.5+ YOE, Java 21 / Spring Boot / React stack, immediate availability (7-day notice period), and contact info.
+  - **Dual Execution Modes**:
+    1. **Assisted 1-Tap Mode (100% Ban-Proof)**: Generates official `https://wa.me/<number>?text=...` Click-to-Chat links and pushes interactive buttons to your **Telegram bot** and **Terminal**. Tapping the button opens WhatsApp with the recruiter's chat and pitch pre-filled.
+    2. **Automated Playwright Web Bot**: Uses persistent Chrome profile in `browser_profile/whatsapp/`, opens `web.whatsapp.com`, enters chat, sends the text pitch, and attaches `output/AMRIT_KUMAR_Resume.pdf`.
+  - **Anti-Ban Protection & Pacing**:
+    - Daily cap (default: 10 messages/day, configurable in `config.json`).
+    - Randomized inter-send delay jitter (45–90s).
+    - Invalid number detection modal handler.
+  - **Retroactive Harvester**: Scans previous queues (`lead_hunt_queue.json`, `screenshot_knowledge_base.json`) to recover any WhatsApp numbers previously missed.
+- **CLI Commands**:
+  - `python3 whatsapp_agent.py --status`: View queued, dispatched, and sent leads.
+  - `python3 whatsapp_agent.py --list`: Display pending leads with clickable `wa.me` links.
+  - `python3 whatsapp_agent.py --login`: Headed Chrome browser wizard to scan WhatsApp Web QR code once.
+  - `python3 whatsapp_agent.py --dispatch`: Dispatch pending leads via 1-tap links and Telegram buttons.
+  - `python3 whatsapp_agent.py --dispatch --automated`: Run automated browser dispatch with PDF attachment.
+  - `python3 whatsapp_agent.py --scan-leads`: Harvest numbers from existing system queues.
+  - `python3 whatsapp_agent.py --add "+91-9876543210" --company "Acme" --role "Full Stack Dev"`: Manually enqueue lead.
+  - `python3 run_all.py --whatsapp`: Unified runner execution.
+  - Telegram Bot: Text `/whatsapp` or `/wa` to get instant 1-tap chat buttons.
+
+---
+
 ### B. Naukri.com Automation Engine ([`naukri_agent.py`](file:///Users/amrit/Documents/JobAutomation/naukri_agent.py))
 - **Dedicated Chrome Profile**: Runs under `/Users/amrit/Documents/JobAutomation/browser_profile/naukri`.
 - **Daily Profile Refresh**:
@@ -1353,6 +1381,7 @@ All personal, screening, credential, and portal parameters are centralized in [`
 ├── manage_dashboard.sh                    # On-Demand Dashboard daemon controller (start/stop/status)
 ├── agent.py                               # Cold Email engine, LaTeX compiler, Ollama OCR parser
 ├── cold_email_agent.py                    # Direct Cold Outreach Engine (list & flyer ingestion)
+├── whatsapp_agent.py                      # Direct WhatsApp Recruiter Outreach & One-Tap Click-to-Chat Engine
 ├── ats_bridge.py                          # Universal External ATS & Forms Classifier & Link Unshortener
 │
 ├── naukri_agent.py                        # Naukri profile heartbeat, search & chatbot QA applier

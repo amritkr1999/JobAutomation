@@ -148,6 +148,7 @@ Rules:
 13. "recipient_email": Email address to apply to, or "" if none found.
 14. "recruiter_name": Name of the recruiter/poster if identifiable, or "" if none.
 15. "summary": A crisp 1-sentence overview of the role.
+16. "whatsapp_number": Recruiter/HR phone or WhatsApp number mentioned in the post, or "" if none found.
 
 Return ONLY a valid JSON object matching this schema.
 
@@ -239,6 +240,16 @@ def fallback_heuristic_extraction(text):
     email_match = re.search(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', text)
     recipient_email = email_match.group(0).lower() if email_match else ""
 
+    # 4b. Phone & WhatsApp extraction
+    whatsapp_number = ""
+    try:
+        import whatsapp_agent
+        phones = whatsapp_agent.extract_phone_numbers(text)
+        if phones:
+            whatsapp_number = phones[0]["raw"]
+    except Exception:
+        pass
+
     # 5. Experience extraction
     exp_min = 3
     exp_max = 5
@@ -274,6 +285,7 @@ def fallback_heuristic_extraction(text):
         "experience_max": exp_max,
         "recruiter_cues": cues,
         "recipient_email": recipient_email,
+        "whatsapp_number": whatsapp_number,
         "recruiter_name": "",
         "summary": "Heuristic fallback extracted job lead."
     }
@@ -328,6 +340,36 @@ def ingest_screenshot_knowledge(file_path, config=None, logs_dir=LOGS_DIR):
 
     # Clean / sanitize fields
     has_email = bool(job_dna.get('recipient_email') and '@' in job_dna.get('recipient_email', ''))
+    
+    # Check for direct WhatsApp contact
+    phone_candidates = []
+    if job_dna.get('whatsapp_number'):
+        phone_candidates.append(job_dna.get('whatsapp_number'))
+    try:
+        import whatsapp_agent
+        for p in whatsapp_agent.extract_phone_numbers(ocr_text):
+            if p["raw"] not in phone_candidates:
+                phone_candidates.append(p["raw"])
+    except Exception:
+        pass
+
+    has_whatsapp = bool(phone_candidates)
+    if has_whatsapp:
+        try:
+            import whatsapp_agent
+            for ph in phone_candidates:
+                whatsapp_agent.enqueue_whatsapp_lead(
+                    phone_raw=ph,
+                    company_name=job_dna.get('company_name', ''),
+                    role_title=job_dna.get('job_title', job_dna.get('normalized_role', 'Full Stack Developer')),
+                    recruiter_name=job_dna.get('recruiter_name', ''),
+                    source=f"screenshot:{filename}",
+                    notes=job_dna.get('summary', ''),
+                    config=config
+                )
+        except Exception as wa_err:
+            logging.warning(f"[IntentMiner] WhatsApp enqueue error: {wa_err}")
+
     primary_tech = [t for t in job_dna.get('primary_tech_stack', []) if isinstance(t, str) and len(t) < 30]
     secondary_tech = [t for t in job_dna.get('secondary_tech_stack', []) if isinstance(t, str) and len(t) < 30]
 
@@ -338,7 +380,9 @@ def ingest_screenshot_knowledge(file_path, config=None, logs_dir=LOGS_DIR):
         "raw_text_length": len(ocr_text),
         "job_dna": job_dna,
         "has_direct_email": has_email,
-        "target_email": job_dna.get('recipient_email', '')
+        "has_whatsapp": has_whatsapp,
+        "target_email": job_dna.get('recipient_email', ''),
+        "target_phones": phone_candidates
     }
 
     kb_data.setdefault('history', []).append(record)
@@ -349,11 +393,12 @@ def ingest_screenshot_knowledge(file_path, config=None, logs_dir=LOGS_DIR):
     logging.info(
         f"[IntentMiner] 🧠 Learned Job DNA from screenshot '{filename}': "
         f"Role='{job_dna.get('normalized_role')}', Primary={primary_tech[:4]}, "
-        f"Email={'Yes (' + job_dna.get('recipient_email') + ')' if has_email else 'No direct email (Queued for Hunt)'}"
+        f"Email={'Yes (' + job_dna.get('recipient_email') + ')' if has_email else 'No'}, "
+        f"WhatsApp={'Yes (' + str(phone_candidates) + ')' if has_whatsapp else 'No'}"
     )
 
-    # If no email is present, register in Lead Hunt Queue
-    if not has_email:
+    # If neither email nor WhatsApp is present, register in Lead Hunt Queue for LinkedIn search
+    if not has_email and not has_whatsapp:
         register_in_lead_hunt_queue(job_dna, filename, logs_dir)
 
     # Recompute user intent profile

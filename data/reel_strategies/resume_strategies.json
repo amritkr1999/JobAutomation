@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_updated": "2026-11-18 10:09:18",
+  "last_updated": "2026-11-21 10:09:20",
   "power_verbs": [
     "Architected",
     "Engineered",
@@ -72,7 +72,9 @@
     "Use keywords like 'Java Full Stack Lead', 'Spring Boot', 'Microservices', 'ReactJS' in the resume",
     "Use action verbs like 'Designed', 'Developed', 'Optimized', and 'Collaborated'",
     "Use specific keywords from the job description in your resume",
-    "Include relevant certifications and education"
+    "Include relevant certifications and education",
+    "Use keywords like Java, Java 8+, Java TL, Java 17, OOPs, Collections, Multithreading, Spring Boot, Spring MVC, Microservices, REST APIs, Hibernate, JPA, Spring Data JPA, SQL, MySQL, PostgreSQL, Spring Security, JWT, Kafka, Git, GitHub, Maven, Docker, Kubernetes, AWS, JUnit, Mockito",
+    "Use keywords from the job description in your resume, such as Java, Spring, Spring Boot, Microservices, and REST APIs"
   ],
   "bullet_formulas": [
     "Accomplished [X] by implementing [Y], resulting in [Z] latency reduction",
@@ -93,6 +95,7 @@
     "e.g. Improved {metric} by {percentage} as measured by {tool} by implementing {solution}",
     "e.g. Developed scalable Java applications with {tech_stack} as measured by {metrics} by implementing {solution}",
     "e.g. Developed scalable data processing solutions using Spark and Scala, resulting in [X]% improvement in data processing efficiency",
-    "e.g. Assessed information security controls, including design effectiveness and operating effectiveness testing, for First American Information Security controls."
+    "e.g. Assessed information security controls, including design effectiveness and operating effectiveness testing, for First American Information Security controls.",
+    "e.g. Developed [X] full stack web applications as measured by [Y] by doing [Z]"
   ]
 }

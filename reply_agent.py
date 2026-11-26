@@ -78,7 +78,7 @@ def query_ollama_draft(prompt: str, config: dict = None) -> str:
         "You are Amrit Kumar, an experienced Full Stack Software Engineer (3.5 YOE: Java 21, Spring Boot 3, React 19, "
         "FastAPI, AWS). You are replying to an HR/technical recruiter. Write a courteous, professional, concise, "
         "and action-oriented email reply. Do NOT include markdown code blocks, placeholders like [Your Name], or robotic pleasantries. "
-        "Sign off as 'Amrit Kumar'."
+        "Sign off as 'Amrit Kumar' followed by contact info: Mobile, Email, LinkedIn, and GitHub profile."
     )
 
     try:
@@ -115,9 +115,19 @@ def draft_response_content(intent: str, recruiter_name: str, company: str, role:
     ])
     slots_formatted = "\n".join([f"• {s}" for s in slots])
     phone = copilot_cfg.get("default_phone", profile.get("phone", "+91-8789498334"))
+    email_addr = profile.get("email", "amrit.399.ak@gmail.com")
+    linkedin = profile.get("linkedin", "https://linkedin.com/in/AmritKumar")
+    github = profile.get("github", "https://github.com/amritkr1999")
     notice = copilot_cfg.get("notice_period", profile.get("notice_period", "7 days (Immediate Joiner)"))
     current_ctc = qa_cfg.get("current_ctc_lpa", "12") + " LPA"
     expected_ctc = qa_cfg.get("expected_ctc_lpa", "15") + " LPA"
+
+    signature = (
+        f"Best regards,\n"
+        f"Amrit Kumar\n"
+        f"Mobile: {phone} | Email: {email_addr}\n"
+        f"LinkedIn: {linkedin} | GitHub: {github}"
+    )
 
     # Try Ollama first
     prompt = f"""
@@ -135,6 +145,9 @@ Candidate Facts:
 - Notice Period: {notice}
 - Location: Bengaluru, India (Open to Remote / Relocation / Hybrid)
 - Phone: {phone}
+- Email: {email_addr}
+- LinkedIn: {linkedin}
+- GitHub: {github}
 - Availability Slots: {slots}
 Recruiter Email Snippet:
 "{original_body[:400]}"
@@ -142,7 +155,11 @@ Recruiter Email Snippet:
 Instructions:
 1. If the recruiter asked about CTC or notice period, explicitly provide Current CTC ({current_ctc}), Expected CTC ({expected_ctc}), and Notice Period ({notice}).
 2. Be direct, courteous, professional, and concise. No generic pleasantries.
-3. Sign off as 'Amrit Kumar'.
+3. Sign off as:
+Best regards,
+Amrit Kumar
+Mobile: {phone} | Email: {email_addr}
+LinkedIn: {linkedin} | GitHub: {github}
 """
     ai_draft = query_ollama_draft(prompt, config)
     if ai_draft and len(ai_draft) > 60 and "Amrit" in ai_draft:
@@ -156,9 +173,7 @@ Instructions:
             f"I have successfully submitted my application via the link provided and attached my updated resume for your records.\n\n"
             f"I am very excited about the work {company_name} is doing and would welcome the opportunity to discuss how my 3.5 years of experience in Java, Spring Boot microservices, and React can add value to your team.\n\n"
             f"Looking forward to hearing from you regarding the next steps.\n\n"
-            f"Best regards,\n"
-            f"Amrit Kumar\n"
-            f"{phone}"
+            f"{signature}"
         )
 
     elif intent in ("SCREENING_REQUEST", "CALL_AVAILABILITY", "INTERVIEW_INVITE"):
@@ -169,9 +184,7 @@ Instructions:
             f"{slots_formatted}\n\n"
             f"You can reach me directly on my cell at {phone}. Alternatively, if there is a calendar invite or specific time that suits you better, please feel free to send it over.\n\n"
             f"Looking forward to speaking with you!\n\n"
-            f"Best regards,\n"
-            f"Amrit Kumar\n"
-            f"{phone}"
+            f"{signature}"
         )
 
     elif intent == "CTC_NOTICE_QUERY":
@@ -187,9 +200,7 @@ Instructions:
             f"I am available for a brief discussion during the following slots:\n"
             f"{slots_formatted}\n\n"
             f"Please let me know a suitable time, and feel free to reach me directly at {phone}. I have also attached my latest resume for your review.\n\n"
-            f"Best regards,\n"
-            f"Amrit Kumar\n"
-            f"{phone}"
+            f"{signature}"
         )
 
     elif intent in ("TECH_ASSESSMENT", "ASSESSMENT_TEST"):
@@ -197,9 +208,7 @@ Instructions:
             f"Hi {greeting_name},\n\n"
             f"Thank you for sharing the assessment details for {company_name}.\n\n"
             f"I have received the challenge and will complete and submit it within the requested timeframe. I will update you once my submission is complete.\n\n"
-            f"Best regards,\n"
-            f"Amrit Kumar\n"
-            f"{phone}"
+            f"{signature}"
         )
 
     elif intent == "RESUME_REQUEST":
@@ -207,9 +216,7 @@ Instructions:
             f"Hi {greeting_name},\n\n"
             f"Thank you for following up! Please find attached my updated resume detailing my background and recent engineering projects across Java, Spring Boot, and modern cloud stacks.\n\n"
             f"I would be glad to walk you through my experience at your convenience.\n\n"
-            f"Best regards,\n"
-            f"Amrit Kumar\n"
-            f"{phone}"
+            f"{signature}"
         )
 
     elif intent == "REJECTION":
@@ -218,9 +225,7 @@ Instructions:
             f"Thank you for letting me know and for taking the time to review my profile for the {role_name} position.\n\n"
             f"I appreciate your team's consideration and would love to stay in touch for any future opportunities at {company_name} that align with my background in Java and backend architecture.\n\n"
             f"Wishing you and the {company_name} team continued success!\n\n"
-            f"Best regards,\n"
-            f"Amrit Kumar\n"
-            f"{phone}"
+            f"{signature}"
         )
 
     else:
@@ -229,9 +234,7 @@ Instructions:
             f"Thank you for getting in touch regarding opportunities at {company_name}.\n\n"
             f"I am actively exploring Full Stack and Backend engineering opportunities (Java / Spring Boot / React / Python) and would love to learn more about how I can contribute to your team.\n\n"
             f"Please let me know if you would like to schedule a brief introductory call.\n\n"
-            f"Best regards,\n"
-            f"Amrit Kumar\n"
-            f"{phone}"
+            f"{signature}"
         )
 
     return body.strip()
