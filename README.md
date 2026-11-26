@@ -50,9 +50,11 @@ The engine coordinates multiple independent platform workers via a unified orche
                                     • Dynamic keyword injection
                                                 │
                                                 ▼
-                                    [ Cold Email Dispatcher ]
-                                    • Gmail SMTP with SSL fallback
-                                    • Anti-spam domain throttling
+                          ┌───────────────────────────────────────────┐
+                          │   Direct Outreach Dispatchers             │
+                          │   • Cold Email (Gmail SMTP + SSL)         │
+                          │   • WhatsApp Web (Playwright + wa.me)     │
+                          └───────────────────────────────────────────┘
 ```
 
 ---
@@ -98,8 +100,8 @@ The engine coordinates multiple independent platform workers via a unified orche
 
 ### 📱 Direct WhatsApp Recruiter Outreach & One-Tap Click-to-Chat
 - **Automated Phone Extraction**: Extracts hiring manager and agency WhatsApp numbers from LinkedIn posts, Naukri cards, dropzone screenshots, and text dumps.
-- **Dual Execution Engine**: Supports both **1-Tap Click-to-Chat links** (`wa.me`) delivered as interactive buttons to your Telegram bot, and **automated Playwright browser dispatch** with tailored resume PDF attachment.
-- **Anti-Ban Throttling**: Strict daily safety pacing (default: 10 messages/day, 45–90s jitter delays) and invalid number checks to keep your personal WhatsApp account secure.
+- **Dual Execution Engine**: Runs **automated Playwright WhatsApp Web dispatch** (default) with tailored resume PDF attachment, or **assisted 1-Tap Click-to-Chat links** (`wa.me`) delivered as interactive buttons to your Telegram bot (`--assisted` or `/whatsapp`).
+- **Anti-Ban Throttling**: Strict daily safety pacing (default: 10 messages/day, 90–180s randomized jitter delays, 10:00 AM–6:30 PM IST Mon–Sat business hours gate, dynamic spintax variation) and invalid number checks to keep your personal WhatsApp account secure.
 
 ### 🛡️ Humanized Browsing & Account Safety
 - Uses persistent, dedicated browser profiles for each platform (`browser_profile/`).
@@ -211,7 +213,7 @@ python3 linkedin_agent.py --add-agency "Michael Page" "TEKsystems"
 python3 linkedin_agent.py --mode check_accepted
 ```
 
-### Run Individual Agents
+### Run Individual Agents & Outreach Engines
 ```bash
 python3 linkedin_agent.py   # Run LinkedIn Easy Apply & Outreach
 python3 naukri_agent.py     # Run Naukri Heartbeat & Apply
@@ -221,6 +223,10 @@ python3 foundit_agent.py    # Run Foundit Pipeline
 python3 shine_agent.py      # Run Shine.com Pipeline
 python3 wellfound_agent.py  # Run Wellfound Startup Pipeline
 python3 agent.py            # Run Dropzone Cold Email Dispatcher
+python3 run_all.py --whatsapp          # Dispatch queued WhatsApp recruiter leads
+python3 whatsapp_agent.py --login      # One-time WhatsApp Web QR authentication
+python3 whatsapp_agent.py --dispatch   # Automated WhatsApp outreach + PDF resume
+python3 whatsapp_agent.py --dispatch --assisted  # Push 1-tap wa.me links to Telegram
 ```
 
 ### Launch Mission Control Web Dashboard

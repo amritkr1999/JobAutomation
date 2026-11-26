@@ -53,6 +53,9 @@ graph TD
     subgraph Core Execution
         TailoredPDF --> |Gmail SMTP with SSL Fallback| HRInbox[Direct HR Email Dispatch]
         ColdAgent --> |Speculative Pitch + Master PDF| HRInbox
+        WhatsAppAgent[WhatsApp Outreach Engine whatsapp_agent.py] --> |Playwright Web + PDF or wa.me 1-Tap| WhatsAppOutreach[Direct Recruiter WhatsApp]
+        IntentMiner --> |Phone Numbers| WhatsAppAgent
+        ColdAgent --> |Phone Numbers| WhatsAppAgent
 
         NaukriAgent --> |Fresh Master PDF + Headline Toggle| NaukriRefresh[Naukri Profile Heartbeat]
         NaukriAgent --> |1-Click Apply + Chatbot QA Bank| NaukriApply[Naukri 100 Daily Applies]
@@ -115,6 +118,7 @@ graph TD
         RunAll --> FormsAgent
         RunAll --> Agent
         RunAll --> ColdAgent
+        RunAll --> WhatsAppAgent
         RunAll --> RecruiterHarvester
         RunAll --> QuotaManager[Quota Manager 5 Waves quota_manager.py]
         RunAll --> Dashboard[Status Dashboard --status]
@@ -188,24 +192,28 @@ graph TD
 - **Core Capabilities**:
   - **Contextual Phone Extraction**: Robust regex and semantic intelligence detects Indian (+91), UAE (+971), Saudi (+966), and international formats, normalizing to E.164 canonical digits (`917011784220`).
   - **Company & Recruiter Name Cleaning**: Strips out noise strings (e.g. *"Email CV at hr@..."* or *"WhatsApp -+91..."*) to preserve clean corporate names for the pitch.
-  - **Role-Adaptive Pitch Copywriting**: Generates crisp, mobile-friendly WhatsApp pitches highlighting 3.5+ YOE, Java 21 / Spring Boot / React stack, immediate availability (7-day notice period), and contact info.
+  - **Role-Adaptive Pitch Copywriting**: Generates crisp, mobile-friendly WhatsApp pitches with multi-dimensional dynamic spintax across 5 career tracks (Full Stack/Backend, FDE/Solutions, TPM/Scrum Master, Data Analyst/Scientist), highlighting 3.5+ YOE, immediate availability (7-day notice period), and contact info.
   - **Dual Execution Modes**:
-    1. **Assisted 1-Tap Mode (100% Ban-Proof)**: Generates official `https://wa.me/<number>?text=...` Click-to-Chat links and pushes interactive buttons to your **Telegram bot** and **Terminal**. Tapping the button opens WhatsApp with the recruiter's chat and pitch pre-filled.
-    2. **Automated Playwright Web Bot**: Uses persistent Chrome profile in `browser_profile/whatsapp/`, opens `web.whatsapp.com`, enters chat, sends the text pitch, and attaches `output/AMRIT_KUMAR_Resume.pdf`.
+    1. **Automated Playwright Web Bot (Default)**: Uses persistent Chrome profile in `browser_profile/whatsapp/`, opens `web.whatsapp.com`, enters chat, sends the text pitch, and attaches `output/AMRIT_KUMAR_Resume.pdf`.
+    2. **Assisted 1-Tap Mode (`--assisted`, 100% Ban-Proof)**: Generates official `https://wa.me/<number>?text=...` Click-to-Chat links and pushes interactive buttons to your **Telegram bot** and **Terminal**. Tapping the button opens WhatsApp with the recruiter's chat and pitch pre-filled.
   - **Anti-Ban Protection & Pacing**:
-    - Daily cap (default: 10 messages/day, configurable in `config.json`).
-    - Randomized inter-send delay jitter (45–90s).
+    - Daily cap (default: 10 messages/day, configurable in `config.json`, max 2 per wave in `quota_manager.py`).
+    - Randomized inter-send delay jitter (`90–180s` default via `min_delay_seconds` / `max_delay_seconds`).
+    - Business Hours Gate: Holds automated sends outside `10:00 AM – 6:30 PM IST` (Monday–Saturday) and pauses on Sundays unless `--force` is passed.
     - Invalid number detection modal handler.
   - **Retroactive Harvester**: Scans previous queues (`lead_hunt_queue.json`, `screenshot_knowledge_base.json`) to recover any WhatsApp numbers previously missed.
 - **CLI Commands**:
   - `python3 whatsapp_agent.py --status`: View queued, dispatched, and sent leads.
   - `python3 whatsapp_agent.py --list`: Display pending leads with clickable `wa.me` links.
   - `python3 whatsapp_agent.py --login`: Headed Chrome browser wizard to scan WhatsApp Web QR code once.
-  - `python3 whatsapp_agent.py --dispatch`: Dispatch pending leads via 1-tap links and Telegram buttons.
-  - `python3 whatsapp_agent.py --dispatch --automated`: Run automated browser dispatch with PDF attachment.
+  - `python3 whatsapp_agent.py --check-login`: Verify active WhatsApp Web session cookies and storage.
+  - `python3 whatsapp_agent.py --dispatch`: Run automated Playwright browser dispatch with PDF attachment (default).
+  - `python3 whatsapp_agent.py --dispatch --assisted`: Dispatch pending leads via 1-tap `wa.me` links and Telegram buttons instead of auto-sending.
+  - `python3 whatsapp_agent.py --dispatch --dry-run`: Preview dynamic spintax pitches and `wa.me` links without sending (supports `--limit N` and `--force`).
   - `python3 whatsapp_agent.py --scan-leads`: Harvest numbers from existing system queues.
-  - `python3 whatsapp_agent.py --add "+91-9876543210" --company "Acme" --role "Full Stack Dev"`: Manually enqueue lead.
-  - `python3 run_all.py --whatsapp`: Unified runner execution.
+  - `python3 whatsapp_agent.py --ingest "path_or_text"`: Extract and enqueue phone numbers from an image, text file, or raw text.
+  - `python3 whatsapp_agent.py --add "+91-9876543210" --company "Acme" --role "Full Stack Dev" --recruiter "Priya"`: Manually enqueue a lead.
+  - `python3 run_all.py --whatsapp`: Unified runner execution (also accepts an optional file path, image, or phone string).
   - Telegram Bot: Text `/whatsapp` or `/wa` to get instant 1-tap chat buttons.
 
 ---
@@ -553,10 +561,10 @@ graph TD
   - Waits up to 3 minutes for you to tap an option or reply via text.
   - Automatically caches your answer into `qa_bank` so the bot never gets stuck on that question again!
 - **Daily Quota Management & Paced Wave Engine ([`quota_manager.py`](file:///Users/amrit/Documents/JobAutomation/quota_manager.py))**:
-  - Automatically calculates real-time daily progress across all 12 pipelines against configured caps (567 daily goal).
+  - Automatically calculates real-time daily progress across all 14 tracked pipelines (including Cold Email & WhatsApp Outreach) against configured caps.
   - Generates visual ASCII progress bars (`[████████░░] 80%`) for CLI and Telegram.
   - Distributes daily targets across **5 scheduled waves** (09:30, 11:30, 13:30, 15:30, 17:30 IST) to maximize interview response rates and avoid portal rate limits.
-  - **Zero-Waste Quota Skipping**: If a platform reaches 100% of its daily cap (e.g. Cold Email at 25/25, Naukri at 100/100), future sweeps immediately skip it without opening Chrome.
+  - **Zero-Waste Quota Skipping**: If a platform reaches 100% of its daily cap (e.g. Cold Email at 25/25, WhatsApp Outreach at 10/10, Naukri at 100/100), future sweeps immediately skip it without opening Chrome.
   - Automatically halts when all daily targets hit 100% and stands by until the next morning.
 - **Daily Executive Digest**: Automatically dispatches a clean, formatted daily status briefing at the end of each automation sweep (`python3 run_all.py --notify-digest` or `python3 notifier.py --digest`).
 - **Keyword Search & Yield Tracker**: Persistent tracking in `logs/keyword_performance.json`:
@@ -564,7 +572,7 @@ graph TD
   - Computes conversion/yield rate: `(Applied / Scanned) * 100%`.
   - Discovers trending roles mined from recruiter posts.
 - **Interactive Telegram Bot Commands**:
-  - `/quota` — Live visual progress bars and remaining applications balance across all 12 pipelines.
+  - `/quota` — Live visual progress bars and remaining applications balance across all tracked pipelines.
   - `/status` — Live summary of today's applications and portal heartbeats.
   - `/health` — Real-time health audit & bottleneck alerts across all 13 platforms.
   - `/bottlenecks` — Instant diagnosis of blocking factors, zero-yield queries, or expired sessions.
@@ -572,6 +580,7 @@ graph TD
   - `/keywords` — Breakdown of query yields, top performers, and mined keywords.
   - `/tasks` — Live list of pending recruiter tasks, interviews, and action items with interactive `[Mark Done]` buttons.
   - `/pipeline` or `/crm` — Snapshot of active recruiter relationship stages and responses.
+  - `/whatsapp` or `/wa` — View pending WhatsApp recruiter leads with instant 1-tap `wa.me` Click-to-Chat buttons.
   - `/inbound` — Triggers an on-demand Gmail INBOX sweep, link application, and reply drafting.
   - `/run all` — Trigger a full paced application sweep right now from your phone.
   - `/run [portal]` — Trigger a specific platform (e.g. `/run greenhouse`, `/run workday`, `/run forms`, `/run inbound`).
@@ -935,6 +944,26 @@ python3 run_all.py --emails
 python3 agent.py
 ```
 
+### WhatsApp Recruiter Outreach
+```bash
+# Authenticate WhatsApp Web once (scan QR code in headed Chrome)
+python3 whatsapp_agent.py --login
+python3 whatsapp_agent.py --check-login
+
+# View queue status and pending leads with 1-tap wa.me links
+python3 whatsapp_agent.py --status
+python3 whatsapp_agent.py --list
+
+# Retroactively harvest recruiter phone numbers from existing queues
+python3 whatsapp_agent.py --scan-leads
+
+# Dispatch via unified launcher or directly (automated Playwright by default, --assisted for 1-tap Telegram links)
+python3 run_all.py --whatsapp
+python3 whatsapp_agent.py --dispatch --dry-run
+python3 whatsapp_agent.py --dispatch
+python3 whatsapp_agent.py --dispatch --assisted
+```
+
 ### Autonomous Reel & Career Advice Knowledge Engine
 ```bash
 # Ingest an Instagram reel or YouTube Shorts by URL:
@@ -1030,7 +1059,7 @@ python3 notifier.py --link
 
 # 7. Start interactive Telegram Bot command listener daemon:
 python3 run_all.py --bot
-# (Text /quota, /status, /health, /bottlenecks, /weekly, /keywords, /tasks, /pipeline, /inbound, /run all, /help directly from your smartphone!)
+# (Text /quota, /status, /health, /bottlenecks, /weekly, /keywords, /tasks, /pipeline, /whatsapp, /inbound, /run all, /help directly from your smartphone!)
 ```
 
 ### Recruiter Interaction Copilot, CRM & Link Automation
@@ -1319,6 +1348,21 @@ All personal, screening, credential, and portal parameters are centralized in [`
     "active_hours_start": 10,
     "active_hours_end": 18
   },
+  "whatsapp_outreach": {
+    "enabled": true,
+    "mode": "automated",
+    "headless": true,
+    "daily_send_limit": 10,
+    "min_delay_seconds": 90,
+    "max_delay_seconds": 180,
+    "active_hours_start": 10,
+    "active_hours_end": 18,
+    "auto_attach_resume": true,
+    "send_telegram_alerts": true,
+    "browser_profile_dir": "/Users/amrit/Documents/JobAutomation/browser_profile/whatsapp",
+    "chrome_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "default_resume_path": "/Users/amrit/Documents/JobAutomation/output/AMRIT_KUMAR_Resume.pdf"
+  },
   "deduplication": {
     "enabled": true,
     "cooldown_days": 14,
@@ -1458,7 +1502,9 @@ All personal, screening, credential, and portal parameters are centralized in [`
 │   ├── foundit_applied_jobs.json          # Foundit applied jobs ledger
 │   ├── greenhouse_applied_jobs.json       # Greenhouse ATS applied jobs ledger
 │   ├── workday_applied_jobs.json          # Workday ATS applied jobs ledger
-│   └── forms_applied.json                 # Google & Microsoft Forms applied ledger
+│   ├── forms_applied.json                 # Google & Microsoft Forms applied ledger
+│   ├── whatsapp_leads_queue.json          # Queued recruiter WhatsApp numbers & pitches
+│   └── whatsapp_sent_records.json         # Dispatched WhatsApp outreach & status ledger
 │
 └── browser_profile/                       # Isolated persistent Google Chrome sessions
     ├── naukri/                            # Naukri persistent profile
@@ -1471,7 +1517,8 @@ All personal, screening, credential, and portal parameters are centralized in [`
     ├── foundit/                           # Foundit persistent profile
     ├── greenhouse/                        # Greenhouse persistent profile
     ├── workday/                           # Workday persistent profile
-    └── forms/                             # Google & Microsoft Forms persistent profile
+    ├── forms/                             # Google & Microsoft Forms persistent profile
+    └── whatsapp/                          # WhatsApp Web persistent session profile
 ```
 
 ---
